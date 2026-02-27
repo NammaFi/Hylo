@@ -144,9 +144,9 @@ async function handleList(chatId, botToken) {
     return;
   }
 
-  // Group by source
-  const ratex = assets.filter(a => a.source === 'RateX');
-  const exponent = assets.filter(a => a.source === 'Exponent');
+  // Group by source (case-insensitive)
+  const ratex = assets.filter(a => a.source?.toLowerCase() === 'ratex');
+  const exponent = assets.filter(a => a.source?.toLowerCase() === 'exponent');
 
   const lines = ['📊 *Available Assets*\n'];
 
