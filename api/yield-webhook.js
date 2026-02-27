@@ -398,28 +398,32 @@ async function handleMyStatus(chatId, botToken) {
   for (const [assetName, config] of Object.entries(userAlerts.assets)) {
     const status = config.enabled ? '✅' : '🔕';
     const liveAsset = assets?.find(a => a.asset === assetName);
-    const currentYield = liveAsset?.impliedYield != null ? `${liveAsset.impliedYield}%` : 'N/A';
+    const iy = liveAsset?.impliedYield != null ? `${liveAsset.impliedYield}%` : 'N/A';
 
-    lines.push(`${status} *${assetName}*`);
-    lines.push(`  Current IY: ${currentYield}`);
+    // Compact: threshold info on same line
+    const parts = [];
+    if (config.thresholdLow != null) parts.push(`↓≤${config.thresholdLow}%`);
+    if (config.thresholdHigh != null) parts.push(`↑≥${config.thresholdHigh}%`);
+    const thresholds = parts.length > 0 ? parts.join(' ') : '—';
 
-    if (config.thresholdLow != null) {
-      lines.push(`  📉 Low: ≤ ${config.thresholdLow}%`);
-    }
-    if (config.thresholdHigh != null) {
-      lines.push(`  📈 High: ≥ ${config.thresholdHigh}%`);
-    }
-    if (config.thresholdLow == null && config.thresholdHigh == null) {
-      lines.push(`  ⚠️ No thresholds set`);
-    }
-    if (config.lastAlert) {
-      const ago = Math.round((Date.now() - new Date(config.lastAlert).getTime()) / 60000);
-      lines.push(`  🔔 Last alert: ${ago} min ago`);
-    }
-    lines.push('');
+    lines.push(`${status} \`${assetName}\` | IY: ${iy} | ${thresholds}`);
   }
 
-  await sendReply(chatId, lines.join('\n'), botToken);
+  // Split into chunks of max ~4000 chars to stay under Telegram's 4096 limit
+  const messages = [];
+  let current = '';
+  for (const line of lines) {
+    if (current.length + line.length + 1 > 3900 && current.length > 0) {
+      messages.push(current);
+      current = '';
+    }
+    current += (current ? '\n' : '') + line;
+  }
+  if (current) messages.push(current);
+
+  for (const msg of messages) {
+    await sendReply(chatId, msg, botToken);
+  }
 }
 
 async function handleHelp(chatId, botToken) {
