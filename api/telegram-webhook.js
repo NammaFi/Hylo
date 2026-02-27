@@ -277,17 +277,25 @@ async function handleStartWithRef(chatId, refCode, botToken) {
     return;
   }
 
-  // Register subscriber
+  // Register subscriber (or update existing — preserve thresholds/alertState)
   if (!alertsData.subscribers) alertsData.subscribers = {};
-  alertsData.subscribers[String(chatId)] = {
-    chatId: chatId,
-    refCode: refCode,
-    thresholds: [140, 135, 130, 110],
-    reAlertIntervalHours: 24,
-    alertState: {},
-    active: true,
-    connectedAt: new Date().toISOString(),
-  };
+  const existing = alertsData.subscribers[String(chatId)];
+  if (existing) {
+    // Already a subscriber — just update refCode and reactivate
+    existing.refCode = refCode;
+    existing.active = true;
+  } else {
+    // New subscriber
+    alertsData.subscribers[String(chatId)] = {
+      chatId: chatId,
+      refCode: refCode,
+      thresholds: [140, 135, 130, 110],
+      reAlertIntervalHours: 24,
+      alertState: {},
+      active: true,
+      connectedAt: new Date().toISOString(),
+    };
+  }
 
   // Mark ref as claimed
   alertsData.pendingRefs[refCode].claimed = true;

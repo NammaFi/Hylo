@@ -20,7 +20,6 @@ const TELEGRAM_API = 'https://api.telegram.org';
 const DEFAULT_THRESHOLDS = [140, 135, 130, 110];
 const CR_RESET_LEVEL = 1.48;
 const DEFAULT_REALERT_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours (default fallback)
-const MIN_ALERT_GAP = 2 * 60 * 1000; // 2 minutes
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -59,17 +58,6 @@ function defaultAlertStateForThresholds(thresholds) {
     state[t.key] = { active: false, lastTelegram: null, lastEmail: null, emailSent: false };
   }
   return state;
-}
-
-function isTooSoonSinceLastAlert(alertState) {
-  const now = Date.now();
-  for (const key of Object.keys(alertState)) {
-    if (key.startsWith('_')) continue;
-    if (alertState[key]?.lastTelegram) {
-      if (now - new Date(alertState[key].lastTelegram).getTime() < MIN_ALERT_GAP) return true;
-    }
-  }
-  return false;
 }
 
 function hasActiveAlerts(alertState) {
@@ -243,12 +231,6 @@ async function evaluateForUser(cr, subscriber, thresholds) {
     return state;
   }
 
-  // ── Race condition guard ──
-  if (isTooSoonSinceLastAlert(state)) {
-    state._lastCR = cr; state._lastChecked = now.toISOString();
-    return state;
-  }
-
   // ── Find most severe ──
   const mostSevere = findMostSevereBreached(cr, thresholds);
   if (!mostSevere) {
@@ -315,22 +297,9 @@ export async function checkCRThresholdsVercel(cr) {
 
   try {
     let alertsData = await fetchAlertsGist();
-    if (!alertsData) alertsData = { subscribers: {}, pendingRefs: {} };
-
-    // Ensure admin subscriber exists
-    const adminChatId = process.env.TELEGRAM_CHAT_ID;
-    if (adminChatId) {
-      const adminKey = String(adminChatId);
-      if (!alertsData.subscribers[adminKey]) {
-        alertsData.subscribers[adminKey] = {
-          chatId: Number(adminChatId),
-          thresholds: DEFAULT_THRESHOLDS,
-          alertState: {},
-          active: true,
-          isAdmin: true,
-          connectedAt: new Date().toISOString(),
-        };
-      }
+    if (!alertsData || !alertsData.subscribers) {
+      console.warn('Could not read alerts Gist — skipping CR check to avoid data loss');
+      return;
     }
 
     const keys = Object.keys(alertsData.subscribers);

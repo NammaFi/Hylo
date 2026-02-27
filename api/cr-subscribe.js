@@ -74,13 +74,13 @@ function generateRefCode() {
   return code;
 }
 
-// ─── Clean up expired pending refs (older than 1 hour) ───────────────────────
+// ─── Clean up expired pending refs (older than 24 hours) ─────────────────────
 
 function cleanExpiredRefs(alertsData) {
   if (!alertsData.pendingRefs) return;
-  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
   for (const [key, ref] of Object.entries(alertsData.pendingRefs)) {
-    if (!ref.claimed && new Date(ref.createdAt).getTime() < oneHourAgo) {
+    if (new Date(ref.createdAt).getTime() < oneDayAgo) {
       delete alertsData.pendingRefs[key];
     }
   }
@@ -211,9 +211,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Subscriber not found' });
     }
 
-    // Update thresholds and reset alert state (new thresholds = fresh start)
-    subscriber.thresholds = validThresholds.sort((a, b) => b - a);
-    subscriber.alertState = {};
+    // Only reset alertState if thresholds actually changed
+    const oldThresholds = JSON.stringify([...(subscriber.thresholds || [])].sort((a, b) => b - a));
+    const newThresholds = validThresholds.sort((a, b) => b - a);
+    subscriber.thresholds = newThresholds;
+    if (JSON.stringify(newThresholds) !== oldThresholds) {
+      subscriber.alertState = {}; // new thresholds = fresh start
+    }
     subscriber.thresholdsUpdatedAt = new Date().toISOString();
 
     // Update re-alert interval (optional, default 24h)

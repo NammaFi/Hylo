@@ -125,9 +125,6 @@ const CR_RESET_LEVEL = 1.48;
 // Default Telegram re-alert interval (fallback when user hasn't customized)
 const DEFAULT_REALERT_INTERVAL = 24 * 60 * 60 * 1000;
 
-// Minimum gap between any alerts (prevents race conditions from scraper + page load)
-const MIN_ALERT_GAP = 2 * 60 * 1000;
-
 function formatIntervalLabel(hours) {
   if (hours >= 24 && hours % 24 === 0) return `${hours / 24}d`;
   return `${hours}h`;
@@ -146,18 +143,6 @@ function defaultAlertStateForThresholds(thresholds) {
     };
   }
   return state;
-}
-
-function isTooSoonSinceLastAlert(alertState) {
-  const now = Date.now();
-  for (const key of Object.keys(alertState)) {
-    if (key.startsWith('_')) continue;
-    const entry = alertState[key];
-    if (entry?.lastTelegram) {
-      if (now - new Date(entry.lastTelegram).getTime() < MIN_ALERT_GAP) return true;
-    }
-  }
-  return false;
 }
 
 function hasActiveAlerts(alertState) {
@@ -217,13 +202,6 @@ async function evaluateForUser(currentCR, subscriber, thresholds) {
   // ── CR above all user thresholds but below reset level ──
   const highestThreshold = Math.max(...thresholds.map(t => t.value));
   if (currentCR >= highestThreshold) {
-    state._lastCR = currentCR;
-    state._lastChecked = now.toISOString();
-    return state;
-  }
-
-  // ── Race condition guard ──
-  if (isTooSoonSinceLastAlert(state)) {
     state._lastCR = currentCR;
     state._lastChecked = now.toISOString();
     return state;
@@ -306,75 +284,35 @@ export async function checkCRAndAlert(collateralRatio, opts = {}) {
 
   console.log(`\n🔍 CR Monitor: CR = ${(collateralRatio * 100).toFixed(1)}% | Reset at ${(CR_RESET_LEVEL * 100).toFixed(0)}%`);
 
-  // ── Admin alert (always, using env vars — backward compatible) ──
-  const adminChatId = process.env.TELEGRAM_CHAT_ID;
-  if (adminChatId) {
-    const adminThresholds = buildThresholdConfigs(DEFAULT_THRESHOLDS);
-    // Read admin alert state from alerts Gist (or start fresh)
-    let alertsData = await fetchAlertsGist(alertsGistId, gistToken);
-    if (!alertsData) alertsData = { subscribers: {}, pendingRefs: {} };
-
-    // Ensure admin subscriber exists
-    const adminKey = String(adminChatId);
-    if (!alertsData.subscribers[adminKey]) {
-      alertsData.subscribers[adminKey] = {
-        chatId: Number(adminChatId),
-        thresholds: DEFAULT_THRESHOLDS,
-        alertState: {},
-        active: true,
-        isAdmin: true,
-        connectedAt: new Date().toISOString(),
-      };
-    }
-
-    const adminSub = alertsData.subscribers[adminKey];
-    const adminThresholdsConfig = buildThresholdConfigs(adminSub.thresholds || DEFAULT_THRESHOLDS);
-    adminSub.alertState = await evaluateForUser(collateralRatio, adminSub, adminThresholdsConfig);
-
-    // ── Process all other subscribers ──
-    const subscriberKeys = Object.keys(alertsData.subscribers).filter(k => k !== adminKey);
-    console.log(`📢 Processing ${subscriberKeys.length} subscriber(s) + admin`);
-
-    for (const key of subscriberKeys) {
-      const sub = alertsData.subscribers[key];
-      if (!sub.active) continue;
-
-      try {
-        const userThresholds = buildThresholdConfigs(sub.thresholds || DEFAULT_THRESHOLDS);
-        sub.alertState = await evaluateForUser(collateralRatio, sub, userThresholds);
-      } catch (err) {
-        console.error(`  ❌ [${sub.chatId}] Alert evaluation failed:`, err.message);
-      }
-    }
-
-    // Persist all subscriber states in one write
-    await persistAlertsGist(alertsData, alertsGistId, gistToken);
-  } else {
-    console.warn('⚠️ No TELEGRAM_CHAT_ID — skipping admin alert. Checking subscribers only...');
-
-    let alertsData = await fetchAlertsGist(alertsGistId, gistToken);
-    if (!alertsData || !alertsData.subscribers || Object.keys(alertsData.subscribers).length === 0) {
-      console.log('ℹ️ No subscribers found — nothing to do');
-      return;
-    }
-
-    const subscriberKeys = Object.keys(alertsData.subscribers);
-    console.log(`📢 Processing ${subscriberKeys.length} subscriber(s)`);
-
-    for (const key of subscriberKeys) {
-      const sub = alertsData.subscribers[key];
-      if (!sub.active) continue;
-
-      try {
-        const userThresholds = buildThresholdConfigs(sub.thresholds || DEFAULT_THRESHOLDS);
-        sub.alertState = await evaluateForUser(collateralRatio, sub, userThresholds);
-      } catch (err) {
-        console.error(`  ❌ [${sub.chatId}] Alert evaluation failed:`, err.message);
-      }
-    }
-
-    await persistAlertsGist(alertsData, alertsGistId, gistToken);
+  // Read alerts Gist — if read fails, abort (never overwrite with empty data)
+  const alertsData = await fetchAlertsGist(alertsGistId, gistToken);
+  if (!alertsData || !alertsData.subscribers) {
+    console.warn('⚠️ Could not read alerts Gist — skipping CR check to avoid data loss');
+    return;
   }
+
+  const subscriberKeys = Object.keys(alertsData.subscribers);
+  if (subscriberKeys.length === 0) {
+    console.log('ℹ️ No subscribers found — nothing to do');
+    return;
+  }
+
+  console.log(`📢 Processing ${subscriberKeys.length} subscriber(s)`);
+
+  for (const key of subscriberKeys) {
+    const sub = alertsData.subscribers[key];
+    if (!sub.active) continue;
+
+    try {
+      const userThresholds = buildThresholdConfigs(sub.thresholds || DEFAULT_THRESHOLDS);
+      sub.alertState = await evaluateForUser(collateralRatio, sub, userThresholds);
+    } catch (err) {
+      console.error(`  ❌ [${sub.chatId}] Alert evaluation failed:`, err.message);
+    }
+  }
+
+  // Persist all subscriber states in one write
+  await persistAlertsGist(alertsData, alertsGistId, gistToken);
 }
 
 /**
