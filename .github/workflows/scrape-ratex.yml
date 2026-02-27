@@ -41,6 +41,7 @@ jobs:
           ALERTS_GIST_ID: ${{ secrets.ALERTS_GIST_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          YIELD_BOT_TOKEN: ${{ secrets.YIELD_BOT_TOKEN }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}

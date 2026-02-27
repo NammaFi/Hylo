@@ -9,7 +9,135 @@ import { chmod } from 'fs/promises';
 const puppeteer = puppeteerCore;
 const GIST_ID = process.env.GIST_ID;
 const GIST_TOKEN = process.env.GIST_TOKEN;
+const YIELD_BOT_TOKEN = process.env.YIELD_BOT_TOKEN;
+const ALERTS_GIST_ID = process.env.ALERTS_GIST_ID;
+const TELEGRAM_API = 'https://api.telegram.org';
 
+// ─── Yield Alert Check ──────────────────────────────────────────────────────
+
+async function fetchAlertsGistForYield() {
+  if (!ALERTS_GIST_ID || !GIST_TOKEN) return null;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${ALERTS_GIST_ID}`, {
+      headers: {
+        'Authorization': `token ${GIST_TOKEN}`,
+        'User-Agent': 'Hylo-Yield-Monitor',
+      },
+    });
+    if (!res.ok) return null;
+    const gist = await res.json();
+    const content = gist.files?.['cr-alert-subscribers.json']?.content;
+    return content ? JSON.parse(content) : null;
+  } catch { return null; }
+}
+
+async function persistAlertsGistForYield(data) {
+  if (!ALERTS_GIST_ID || !GIST_TOKEN) return;
+  try {
+    await fetch(`https://api.github.com/gists/${ALERTS_GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${GIST_TOKEN}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Hylo-Yield-Monitor',
+      },
+      body: JSON.stringify({
+        files: {
+          'cr-alert-subscribers.json': { content: JSON.stringify(data, null, 2) },
+        },
+      }),
+    });
+  } catch (err) {
+    console.warn('❌ Failed to persist yield alerts:', err.message);
+  }
+}
+
+async function sendYieldTelegramAlert(chatId, text) {
+  if (!YIELD_BOT_TOKEN) return;
+  try {
+    await fetch(`${TELEGRAM_API}/bot${YIELD_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch (err) {
+    console.warn(`  ❌ Failed to send yield alert to ${chatId}:`, err.message);
+  }
+}
+
+async function checkYieldAlerts(assets) {
+  if (!YIELD_BOT_TOKEN || !ALERTS_GIST_ID) {
+    console.log('ℹ️ Yield alerts: YIELD_BOT_TOKEN or ALERTS_GIST_ID not set, skipping');
+    return;
+  }
+
+  const alertsData = await fetchAlertsGistForYield();
+  if (!alertsData?.yieldAlerts) {
+    console.log('ℹ️ No yield alert subscribers found');
+    return;
+  }
+
+  const now = new Date().toISOString();
+  let anyAlertSent = false;
+
+  for (const [chatId, userData] of Object.entries(alertsData.yieldAlerts)) {
+    if (!userData?.assets) continue;
+
+    for (const [assetName, config] of Object.entries(userData.assets)) {
+      if (!config.enabled) continue;
+
+      // Find this asset in the scraped data
+      const liveAsset = assets.find(a => a.asset === assetName);
+      if (!liveAsset || liveAsset.impliedYield == null) continue;
+
+      const iy = parseFloat(liveAsset.impliedYield);
+      if (isNaN(iy)) continue;
+
+      let triggered = false;
+      let direction = '';
+
+      // Check low threshold: alert when IY ≤ thresholdLow
+      if (config.thresholdLow != null && iy <= config.thresholdLow) {
+        triggered = true;
+        direction = `📉 *Below Low Threshold*\nIY ${iy}% ≤ ${config.thresholdLow}%`;
+      }
+
+      // Check high threshold: alert when IY ≥ thresholdHigh
+      if (config.thresholdHigh != null && iy >= config.thresholdHigh) {
+        triggered = true;
+        direction = `📈 *Above High Threshold*\nIY ${iy}% ≥ ${config.thresholdHigh}%`;
+      }
+
+      if (triggered) {
+        const msg = [
+          `🔔 *Yield Alert — ${assetName}*`,
+          '',
+          direction,
+          '',
+          `📊 Current Implied Yield: *${iy}%*`,
+          `🏷️ Source: ${liveAsset.source || 'N/A'}`,
+          `⏰ ${now}`,
+        ].join('\n');
+
+        await sendYieldTelegramAlert(chatId, msg);
+        config.lastAlert = now;
+        config.lastYield = iy;
+        anyAlertSent = true;
+        console.log(`  📱 Yield alert sent to ${chatId} for ${assetName} (IY=${iy}%)`);
+      }
+    }
+  }
+
+  if (anyAlertSent) {
+    await persistAlertsGistForYield(alertsData);
+    console.log('✅ Yield alert states persisted');
+  }
+}
 if (!GIST_ID || !GIST_TOKEN) {
   console.error('❌ Missing required environment variables: GIST_ID and GIST_TOKEN');
   process.exit(1);
@@ -460,6 +588,11 @@ async function main() {
     await updateGist(GIST_ID, phase2Timestamp, GIST_TOKEN);
     console.log('✅ Phase 2 Gist updated - Complete data available!');
     console.log(`🔗 Raw URL: https://gist.githubusercontent.com/TejSingh24/${GIST_ID}/raw/ratex-assets.json`);
+    
+    // ========== YIELD ALERT CHECK (after Gist write, non-blocking) ==========
+    checkYieldAlerts(phase2FinalData).catch(err =>
+      console.warn('⚠️ Yield alert check failed:', err.message)
+    );
     
     // Close browser
     await browser.close();
