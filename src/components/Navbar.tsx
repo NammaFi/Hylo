@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, BarChart3, Calculator, TrendingUp, Bell } from 'lucide-react';
 import './Dashboard.css';
 
-const GIST_RAW_URL = 'https://gist.githubusercontent.com/TejSingh24/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
+const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
 
 const Navbar: React.FC = () => {
   const location = useLocation();

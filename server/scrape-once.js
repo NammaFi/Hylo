@@ -478,7 +478,7 @@ async function main() {
     
     await updateGist(GIST_ID, phase2Timestamp, GIST_TOKEN);
     console.log('✅ Phase 2 Gist updated - Complete data available!');
-    console.log(`🔗 Raw URL: https://gist.githubusercontent.com/TejSingh24/${GIST_ID}/raw/ratex-assets.json`);
+    console.log(`🔗 Raw URL: https://gist.githubusercontent.com/NammaFi/${GIST_ID}/raw/ratex-assets.json`);
     
     // ========== YIELD ALERT CHECK (via Vercel API) ==========
     await triggerYieldAlertCheck();
