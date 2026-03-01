@@ -1,5 +1,5 @@
 // Backend data URL - Public, no authentication needed
-const GIST_RAW_URL = 'https://gist.githubusercontent.com/TejSingh24/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
+const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
 
 console.log('Fetching RateX data from backend'); // Debug log
 
@@ -137,7 +137,7 @@ export async function triggerWorkflowRefresh(): Promise<boolean> {
     }
 
     const response = await fetch(
-      'https://api.github.com/repos/TejSingh24/Hylo/actions/workflows/scrape-ratex.yml/dispatches',
+      'https://api.github.com/repos/NammaFi/Hylo/actions/workflows/scrape-ratex.yml/dispatches',
       {
         method: 'POST',
         headers: {

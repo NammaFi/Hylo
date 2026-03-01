@@ -8,7 +8,7 @@
  * 4. Then fetch fresh data from backend
  */
 
-const GITHUB_OWNER = 'TejSingh24';
+const GITHUB_OWNER = 'NammaFi';
 const GITHUB_REPO = 'Hylo';
 const WORKFLOW_NAME = 'scrape-ratex.yml';
 

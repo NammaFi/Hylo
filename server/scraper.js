@@ -6,7 +6,7 @@ const puppeteer = puppeteerCore;
 
 // Gist configuration
 const GIST_ID = process.env.GIST_ID || 'd3a1db6fc79e168cf5dff8d3a2c11706';
-const GIST_RAW_URL = `https://gist.githubusercontent.com/TejSingh24/${GIST_ID}/raw/ratex-assets.json`;
+const GIST_RAW_URL = `https://gist.githubusercontent.com/NammaFi/${GIST_ID}/raw/ratex-assets.json`;
 
 /**
  * Fetch existing Gist data for fallback/merge

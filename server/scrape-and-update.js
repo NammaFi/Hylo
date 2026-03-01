@@ -109,7 +109,7 @@ async function scrapeAndUpdate() {
     
     console.log('✅ Gist updated successfully!');
     console.log(`🔗 View at: https://gist.github.com/${GIST_ID}`);
-    console.log(`🔗 Raw URL: https://gist.githubusercontent.com/TejSingh24/${GIST_ID}/raw/ratex-assets.json`);
+    console.log(`🔗 Raw URL: https://gist.githubusercontent.com/NammaFi/${GIST_ID}/raw/ratex-assets.json`);
     
     return dataWithTimestamp;
     

@@ -23,7 +23,7 @@
 
 const TELEGRAM_API = 'https://api.telegram.org';
 const HYLO_STATS_API = 'https://api.hylo.so/stats';
-const GIST_RAW_URL = 'https://gist.githubusercontent.com/TejSingh24/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
+const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
 
 // ─── Alerts Gist helpers ─────────────────────────────────────────────────────
 
