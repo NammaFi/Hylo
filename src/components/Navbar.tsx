@@ -66,16 +66,17 @@ const Navbar: React.FC = () => {
         <div className="navbar-container">
           <div className="navbar-brand">
             <h1 className="navbar-title">Hylo</h1>
+            <div className="navbar-brand-divider"></div>
             <span className="navbar-subtitle">Community Hub</span>
           </div>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links — Pill Tabs */}
           <div className="navbar-links">
             <Link 
               to="/" 
               className={`navbar-link ${isActive('/') ? 'navbar-link-active' : ''}`}
             >
-              <Home size={18} />
+              <Home size={14} />
               <span>Home</span>
             </Link>
 
@@ -83,8 +84,8 @@ const Navbar: React.FC = () => {
               to="/dashboard" 
               className={`navbar-link ${isActive('/dashboard') ? 'navbar-link-active' : ''}`}
             >
-              <BarChart3 size={18} />
-              <span>Strategy Dashboard</span>
+              <BarChart3 size={14} />
+              <span>Dashboard</span>
             </Link>
 
             <Link 
@@ -92,9 +93,9 @@ const Navbar: React.FC = () => {
               className={`navbar-link ${isActive('/xsol-metrics') ? 'navbar-link-active' : ''}`}
             >
               {xsolIconUrl ? (
-                <img src={xsolIconUrl} alt="xSOL" style={{ width: 18, height: 18, borderRadius: '50%' }} />
+                <img src={xsolIconUrl} alt="xSOL" style={{ width: 14, height: 14, borderRadius: '50%' }} />
               ) : (
-                <TrendingUp size={18} />
+                <TrendingUp size={14} />
               )}
               <span>xSOL Metrics</span>
             </Link>
@@ -103,17 +104,25 @@ const Navbar: React.FC = () => {
               to="/calculator" 
               className={`navbar-link ${isActive('/calculator') ? 'navbar-link-active' : ''}`}
             >
-              <Calculator size={18} />
-              <span>Yield Calculator</span>
+              <Calculator size={14} />
+              <span>Calculator</span>
             </Link>
 
             <Link 
               to="/cr-alerts" 
               className={`navbar-link ${isActive('/cr-alerts') ? 'navbar-link-active' : ''}`}
             >
-              <Bell size={18} />
+              <Bell size={14} />
               <span>CR Alerts</span>
             </Link>
+          </div>
+
+          {/* Live Indicator */}
+          <div className="navbar-right">
+            <div className="live-pill">
+              <div className="live-dot"></div>
+              <span className="live-text">Live</span>
+            </div>
           </div>
 
           {/* Hamburger Button (Mobile Only) */}
@@ -146,7 +155,7 @@ const Navbar: React.FC = () => {
           onClick={closeMobileMenu}
         >
           <BarChart3 size={24} />
-          <span>Strategy Dashboard</span>
+          <span>Dashboard</span>
         </Link>
 
         <Link 
@@ -168,7 +177,7 @@ const Navbar: React.FC = () => {
           onClick={closeMobileMenu}
         >
           <Calculator size={24} />
-          <span>Yield Calculator</span>
+          <span>Calculator</span>
         </Link>
 
         <Link 

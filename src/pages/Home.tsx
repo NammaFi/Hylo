@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Calculator, ArrowRight, TrendingUp, Shield, DollarSign, Activity } from 'lucide-react';
+import { BarChart3, Calculator, ArrowRight, TrendingUp, Bell } from 'lucide-react';
 import { checkAndRefreshIfStale } from '../services/ratexApi';
 import '../components/Dashboard.css';
 
@@ -35,129 +35,113 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-page">
-      <div className="home-container">
-        {/* Hero Section */}
-        <div className="home-hero">
-          <h1 className="home-title">
-            Hylo Community Toolkit
-          </h1>
-          <p className="home-subtitle">
-            Comprehensive tools for analyzing and calculating yields/points for all Exponent/Rate-X available tokens
-          </p>
+      <div className="home-inner" style={{ textAlign: 'center' }}>
+
+        {/* Hero Tag */}
+        <div className="hero-tag">Community-Built Tools for Hylo Protocol</div>
+
+        {/* Hero Title */}
+        <h1 className="hero-title">
+          <span className="home-title-brand">Hylo</span><br />
+          <span className="home-title-white">Community Toolkit</span>
+        </h1>
+
+        {/* Hero Subtitle */}
+        <p className="hero-sub">
+          Analyze leveraged positions, calculate yield, track xSOL protocol metrics, and set collateral ratio alerts — all in one place.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="hero-btns">
+          <Link to="/dashboard" className="hero-btn hero-btn-primary">Open Dashboard →</Link>
+          <Link to="/xsol-metrics" className="hero-btn hero-btn-secondary">xSOL Metrics</Link>
         </div>
 
-        {/* Navigation Cards - Row 1: Dashboard + xSOL Metrics */}
-        <div className="home-cards">
-          {/* Strategy Dashboard Card */}
-          <Link to="/dashboard" className="home-card home-card-dashboard">
-            <div className="home-card-icon">
-              <BarChart3 size={48} />
+        {/* Tools Section */}
+        <div className="section-mono" style={{ textAlign: 'left' }}>Tools</div>
+
+        {/* Tool Cards Row */}
+        <div className="tool-cards-row">
+
+          {/* Strategy Dashboard */}
+          <Link to="/dashboard" className="tool-card violet-stripe">
+            <div className="tc-top">
+              <div className="tc-icon violet">
+                <BarChart3 size={20} />
+              </div>
+              <span className="tc-badge live">Live data</span>
             </div>
-            <div className="home-card-content">
-              <h2 className="home-card-title">YT's Strategy/Risk Dashboard</h2>
-              <p className="home-card-description">
-                Monitor leveraged yield positions with comprehensive risk analysis, 
-                upside potential, downside risk, and projected points earnings.
-              </p>
-              <ul className="home-card-features">
-                <li>
-                  <Shield size={16} />
-                  <span>Live market metrics and analysis</span>
-                </li>
-                <li>
-                  <TrendingUp size={16} />
-                  <span>Track upside potential & downside risk</span>
-                </li>
-                <li>
-                  <BarChart3 size={16} />
-                  <span>Monitor all assets in one place</span>
-                </li>
-              </ul>
-            </div>
-            <div className="home-card-action">
-              <span>View Dashboard</span>
-              <ArrowRight size={20} />
-            </div>
+            <div className="tc-title">Strategy Dashboard</div>
+            <div className="tc-desc">Real-time yield positions across Rate-X and Exponent with advanced filtering, risk scoring, and points projections.</div>
+            <ul className="tc-features">
+              <li><span className="check">✓</span> Live leverage &amp; implied yield metrics</li>
+              <li><span className="check">✓</span> Upside / downside risk analysis</li>
+              <li><span className="check">✓</span> Expected points per day projections</li>
+            </ul>
+            <div className="tc-link violet-link">Open Strategy <ArrowRight size={14} /></div>
           </Link>
 
-          {/* xSOL Metrics Card */}
-          <Link to="/xsol-metrics" className="home-card home-card-xsol">
-            <div className="home-card-icon">
-              {xsolIconUrl ? (
-                <img src={xsolIconUrl} alt="xSOL" style={{ width: 48, height: 48, borderRadius: '50%' }} />
-              ) : (
-                <TrendingUp size={48} />
-              )}
+          {/* xSOL Metrics */}
+          <Link to="/xsol-metrics" className="tool-card teal-stripe">
+            <div className="tc-top">
+              <div className="tc-icon teal">
+                {xsolIconUrl ? (
+                  <img src={xsolIconUrl} alt="xSOL" style={{ width: 20, height: 20, borderRadius: '50%' }} />
+                ) : (
+                  <TrendingUp size={20} />
+                )}
+              </div>
+              <span className="tc-badge realtime">Protocol</span>
             </div>
-            <div className="home-card-content">
-              <h2 className="home-card-title">xSOL Metrics & Break-Even</h2>
-              <p className="home-card-description">
-                Track real-time xSOL protocol metrics including collateral ratio, 
-                effective leverage, and calculate your break-even price.
-              </p>
-              <ul className="home-card-features">
-                <li>
-                  <Activity size={16} />
-                  <span>Live protocol metrics from blockchain</span>
-                </li>
-                <li>
-                  <DollarSign size={16} />
-                  <span>Real-time xSOL & SOL prices</span>
-                </li>
-                <li>
-                  <Calculator size={16} />
-                  <span>Break-even price calculator</span>
-                </li>
-              </ul>
-            </div>
-            <div className="home-card-action">
-              <span>View Metrics</span>
-              <ArrowRight size={20} />
-            </div>
+            <div className="tc-title">xSOL Metrics</div>
+            <div className="tc-desc">Protocol-level data for the Hylo xSOL token including collateral ratios, supply, leverage, and break-even calculator.</div>
+            <ul className="tc-features">
+              <li><span className="check">✓</span> Real-time collateral ratio &amp; TVL</li>
+              <li><span className="check">✓</span> Stability pool xSOL tracking</li>
+              <li><span className="check">✓</span> Phase-aware break-even calculator</li>
+            </ul>
+            <div className="tc-link teal-link">Open xSOL <ArrowRight size={14} /></div>
           </Link>
+
+          {/* Yield Calculator */}
+          <Link to="/calculator" className="tool-card amber-stripe">
+            <div className="tc-top">
+              <div className="tc-icon amber">
+                <Calculator size={20} />
+              </div>
+              <span className="tc-badge new">Tool</span>
+            </div>
+            <div className="tc-title">Yield Calculator</div>
+            <div className="tc-desc">Calculate gross and net yield returns for any Hylo-RateX position. Supports manual entry or auto-fetch from live data.</div>
+            <ul className="tc-features">
+              <li><span className="check">✓</span> Manual &amp; auto-fetch modes</li>
+              <li><span className="check">✓</span> Gross &amp; net yield calculations</li>
+              <li><span className="check">✓</span> Points projections at any deposit size</li>
+            </ul>
+            <div className="tc-link amber-link">Open Yield <ArrowRight size={14} /></div>
+          </Link>
+
         </div>
 
-        {/* Navigation Cards - Row 2: Calculator (Centered) */}
-        <div className="home-cards home-cards-centered">
-          {/* Yield Calculator Card */}
-          <Link to="/calculator" className="home-card home-card-calculator">
-            <div className="home-card-icon">
-              <Calculator size={48} />
+        {/* CR Alerts Bottom Bar */}
+        <Link to="/cr-alerts" className="cr-bottom-row">
+          <div className="cr-row-left">
+            <div className="cr-row-icon">
+              <Bell size={18} />
             </div>
-            <div className="home-card-content">
-              <h2 className="home-card-title">YT Yield/Point Calculator</h2>
-              <p className="home-card-description">
-                Calculate expected yield returns or points for your leveraged yield token positions. 
-                Enter parameters manually or fetch live data from Exponent/Rate-X.
-              </p>
-              <ul className="home-card-features">
-                <li>
-                  <Calculator size={16} />
-                  <span>Manual & auto-fetch modes</span>
-                </li>
-                <li>
-                  <TrendingUp size={16} />
-                  <span>Gross & net yield calculations</span>
-                </li>
-                <li>
-                  <BarChart3 size={16} />
-                  <span>Expected points projections</span>
-                </li>
-              </ul>
+            <div>
+              <div className="cr-row-title">CR Alerts</div>
+              <div className="cr-row-desc">Get Telegram notifications when collateral ratio drops below your threshold</div>
             </div>
-            <div className="home-card-action">
-              <span>Open Calculator</span>
-              <ArrowRight size={20} />
-            </div>
-          </Link>
+          </div>
+          <div className="cr-row-link">Setup <ArrowRight size={14} /></div>
+        </Link>
+
+        {/* Footer */}
+        <div className="home-footer-text">
+          Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
         </div>
 
-        {/* Footer Info */}
-        <div className="home-footer">
-          <p className="home-footer-text">
-            Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
-          </p>
-        </div>
       </div>
     </div>
   );
