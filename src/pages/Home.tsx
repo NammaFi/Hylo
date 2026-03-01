@@ -137,11 +137,11 @@ const Home: React.FC = () => {
           <div className="cr-row-link">Setup <ArrowRight size={14} /></div>
         </Link>
 
-        {/* Footer */}
-        <div className="home-footer-text">
-          Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
-        </div>
+      </div>
 
+      {/* Footer disclaimer — full-width at very bottom */}
+      <div className="home-footer-text">
+        Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
       </div>
     </div>
   );

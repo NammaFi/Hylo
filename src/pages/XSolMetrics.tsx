@@ -205,13 +205,35 @@ const XSolMetrics: React.FC = () => {
     }
   };
 
-  // Calculate dynamic step based on xSOL price
-  const getInputStep = (): string => {
-    if (!metrics) return '0.01';
-    if (metrics.xSOL_price < 0.01) return '0.0001';
-    if (metrics.xSOL_price < 0.1) return '0.001';
-    return '0.01';
+  // Calculate step = place value of the second significant (non-zero) digit
+  const stepForValue = (v: number | undefined | null): string => {
+    if (!v || v === 0) return '0.01';
+    const abs = Math.abs(v);
+    const s = abs.toPrecision(15).replace(/0+$/, '');   // e.g. "1.0756"
+    let count = 0;
+    let lastPos = 0;
+    const dotIdx = s.indexOf('.');
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (ch === '.' || ch === '-') continue;
+      if (ch !== '0' || count > 0) {
+        count++;
+        // position relative to decimal: digits left of dot are positive powers, right are negative
+        if (dotIdx === -1) {
+          lastPos = s.length - 1 - i;          // integer: position from right
+        } else if (i < dotIdx) {
+          lastPos = dotIdx - 1 - i;             // left of dot
+        } else {
+          lastPos = -(i - dotIdx);              // right of dot (negative)
+        }
+        if (count === 2) return (10 ** lastPos).toFixed(Math.max(0, -lastPos));
+      }
+    }
+    // Only one significant digit found – step one order smaller
+    return (10 ** (lastPos - 1)).toFixed(Math.max(0, -(lastPos - 1)));
   };
+
+  const getInputStep = (): string => stepForValue(metrics?.xSOL_price);
 
   return (
     <div className="xsol-page dashboard-page">
@@ -271,15 +293,16 @@ const XSolMetrics: React.FC = () => {
             </div>
             {editingField === 'xSOL_price' ? (
               <div className="xm-edit-field">
+                <Check size={18} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <input
                   type="number"
                   className="xm-edit-input"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={handleEditKeyPress}
+                  step={stepForValue(metrics?.xSOL_price)}
                   autoFocus
                 />
-                <Check size={18} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <X size={18} style={{ color: '#ef4444', cursor: 'pointer' }} onClick={cancelEdit} />
               </div>
             ) : (
@@ -304,15 +327,16 @@ const XSolMetrics: React.FC = () => {
             </div>
             {editingField === 'SOL_price' ? (
               <div className="xm-edit-field">
+                <Check size={18} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <input
                   type="number"
                   className="xm-edit-input"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={handleEditKeyPress}
+                  step={stepForValue(metrics?.SOL_price)}
                   autoFocus
                 />
-                <Check size={18} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <X size={18} style={{ color: '#ef4444', cursor: 'pointer' }} onClick={cancelEdit} />
               </div>
             ) : (
@@ -385,6 +409,7 @@ const XSolMetrics: React.FC = () => {
             </div>
             {editingField === 'xSOL_supply' ? (
               <div className="xs-edit-field">
+                <Check size={14} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <input
                   type="text"
                   className="xs-edit-input"
@@ -401,7 +426,6 @@ const XSolMetrics: React.FC = () => {
                   autoFocus
                   placeholder="e.g., 18,000,000"
                 />
-                <Check size={14} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <X size={14} style={{ color: '#ef4444', cursor: 'pointer' }} onClick={cancelEdit} />
               </div>
             ) : (
@@ -425,6 +449,7 @@ const XSolMetrics: React.FC = () => {
             </div>
             {editingField === 'HYusd_supply' ? (
               <div className="xs-edit-field">
+                <Check size={14} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <input
                   type="text"
                   className="xs-edit-input"
@@ -441,7 +466,6 @@ const XSolMetrics: React.FC = () => {
                   autoFocus
                   placeholder="Enter full number"
                 />
-                <Check size={14} style={{ color: '#10b981', cursor: 'pointer' }} onClick={confirmEdit} />
                 <X size={14} style={{ color: '#ef4444', cursor: 'pointer' }} onClick={cancelEdit} />
               </div>
             ) : (
@@ -493,7 +517,7 @@ const XSolMetrics: React.FC = () => {
                 disabled={!metrics}
               />
             </div>
-            <div className="be-hint">💡 Enter the price you paid for xSOL in USD</div>
+            <div className="be-hint">Enter the price you paid for xSOL in USD</div>
           </div>
 
           {/* Result */}
