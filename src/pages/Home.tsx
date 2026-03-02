@@ -37,9 +37,6 @@ const Home: React.FC = () => {
     <div className="home-page">
       <div className="home-inner" style={{ textAlign: 'center' }}>
 
-        {/* Hero Tag */}
-        <div className="hero-tag">Community-Built Tools for Hylo Protocol</div>
-
         {/* Hero Title */}
         <h1 className="hero-title">
           <span className="home-title-brand">Hylo</span><br />
@@ -56,9 +53,6 @@ const Home: React.FC = () => {
           <Link to="/dashboard" className="hero-btn hero-btn-primary">Open Dashboard →</Link>
           <Link to="/xsol-metrics" className="hero-btn hero-btn-secondary">xSOL Metrics</Link>
         </div>
-
-        {/* Tools Section */}
-        <div className="section-mono" style={{ textAlign: 'left' }}>Tools</div>
 
         {/* Tool Cards Row */}
         <div className="tool-cards-row">
