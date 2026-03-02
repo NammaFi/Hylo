@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Calculator, ArrowRight, TrendingUp, Bell } from 'lucide-react';
+import { BarChart3, ArrowRight, TrendingUp, Bell } from 'lucide-react';
 import { checkAndRefreshIfStale } from '../services/ratexApi';
 import '../components/Dashboard.css';
 
@@ -95,24 +95,6 @@ const Home: React.FC = () => {
               <li><span className="check">✓</span> Phase-aware break-even calculator</li>
             </ul>
             <div className="tc-link teal-link">Open xSOL <ArrowRight size={14} /></div>
-          </Link>
-
-          {/* Yield Calculator */}
-          <Link to="/calculator" className="tool-card amber-stripe">
-            <div className="tc-top">
-              <div className="tc-icon amber">
-                <Calculator size={20} />
-              </div>
-              <span className="tc-badge new">Tool</span>
-            </div>
-            <div className="tc-title">Yield Calculator</div>
-            <div className="tc-desc">Calculate gross and net yield returns for any Hylo-RateX position. Supports manual entry or auto-fetch from live data.</div>
-            <ul className="tc-features">
-              <li><span className="check">✓</span> Manual &amp; auto-fetch modes</li>
-              <li><span className="check">✓</span> Gross &amp; net yield calculations</li>
-              <li><span className="check">✓</span> Points projections at any deposit size</li>
-            </ul>
-            <div className="tc-link amber-link">Open Yield <ArrowRight size={14} /></div>
           </Link>
 
         </div>
