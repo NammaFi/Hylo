@@ -780,11 +780,11 @@ const StrategyDashboard: React.FC = () => {
         )}
 
         {/* Footer Info */}
-        <div className="home-footer">
-          <p>
-            Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
-          </p>
-        </div>
+      </div>
+      <div className="home-footer">
+        <p>
+          Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
+        </p>
       </div>
     </div>
   );
