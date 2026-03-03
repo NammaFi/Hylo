@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BarChart3, Calculator, TrendingUp, Bell } from 'lucide-react';
+import { Home, BarChart3, TrendingUp, Bell } from 'lucide-react';
 import './Dashboard.css';
 
 const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
@@ -101,14 +101,6 @@ const Navbar: React.FC = () => {
             </Link>
 
             <Link 
-              to="/calculator" 
-              className={`navbar-link ${isActive('/calculator') ? 'navbar-link-active' : ''}`}
-            >
-              <Calculator size={14} />
-              <span>Calculator</span>
-            </Link>
-
-            <Link 
               to="/cr-alerts" 
               className={`navbar-link ${isActive('/cr-alerts') ? 'navbar-link-active' : ''}`}
             >
@@ -169,15 +161,6 @@ const Navbar: React.FC = () => {
             <TrendingUp size={24} />
           )}
           <span>xSOL Metrics</span>
-        </Link>
-
-        <Link 
-          to="/calculator" 
-          className={`navbar-link ${isActive('/calculator') ? 'navbar-link-active' : ''}`}
-          onClick={closeMobileMenu}
-        >
-          <Calculator size={24} />
-          <span>Calculator</span>
         </Link>
 
         <Link 

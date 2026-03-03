@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, RefreshCw, Info, LayoutGrid, List } from 'lucide-react';
+import { Search, RefreshCw, Info, LayoutGrid, List, BarChart3 } from 'lucide-react';
 import type { AssetData } from '../services/ratexApi';
 import { fetchAllAssets, getLastUpdated, checkAndRefreshIfStale } from '../services/ratexApi';
 import AssetCard from '../components/AssetCard';
@@ -709,17 +709,19 @@ const StrategyDashboard: React.FC = () => {
           <div className="modal-overlay" onClick={() => setShowInfoModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>
-                  <span className="modal-emoji">📊</span>
-                  <span className="modal-title-text">Understanding Asset Card Metrics</span>
-                </h2>
+                <div className="modal-header-left">
+                  <div className="modal-header-icon">
+                    <BarChart3 size={18} />
+                  </div>
+                  <h2>Understanding Asset Card Metrics</h2>
+                </div>
                 <button className="modal-close" onClick={() => setShowInfoModal(false)}>
                   ×
                 </button>
               </div>
               <div className="modal-body">
                 <div className="info-section">
-                  <h3>CORE METRICS</h3>
+                  <div className="info-section-label">Core Metrics</div>
                   <ul>
                     <li><strong>Asset Name:</strong> The yield-bearing token (Base Asset)</li>
                     <li><strong>Maturity Timer:</strong> Time till yield token expires</li>
@@ -727,14 +729,14 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>PRICE & RANGE</h3>
+                  <div className="info-section-label">Price & Range</div>
                   <ul>
                     <li><strong>Price Range:</strong> Expected price fluctuation range based on Implied Yield Range</li>
                   </ul>
                 </div>
 
                 <div className="info-section">
-                  <h3>YIELD & LEVERAGE</h3>
+                  <div className="info-section-label">Yield & Leverage</div>
                   <ul>
                     <li><strong>Underlying APY:</strong> Annual Percentage Yield at current market conditions, a 7-day Average</li>
                     <li><strong>Implied Yield:</strong> Market's expected yield based on YT pricing</li>
@@ -743,9 +745,9 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>PERFORMANCE METRICS</h3>
+                  <div className="info-section-label">Performance Metrics</div>
                   <ul>
-                    <li><strong>Expected Recovery Yield:</strong> Total Percentage Recovery of underlyin asset (Not $ value) possible through Yields, if hold till maturity</li>
+                    <li><strong>Expected Recovery Yield:</strong> Total Percentage Recovery of underlying asset (Not $ value) possible through Yields, if hold till maturity</li>
                     <li><strong>Daily Decay Rate:</strong> Daily percentage decrease in yield value due to time passing, for the same Implied Yield. Decay happens during Yield distribution</li>
                     <li><strong>Upside Potential:</strong> Maximum potential gain possible for today if implied yield increases to upper range (Approx. with deviation of 0.5-1%)</li>
                     <li><strong>Downside Risk:</strong> Maximum Potential loss possible for today if implied yield decreases to lower range (Approx. with deviation of 0.5-1%)</li>
@@ -753,7 +755,7 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>POINTS TRACKING</h3>
+                  <div className="info-section-label">Points Tracking</div>
                   <ul>
                     <li><strong>Expected Points/Day:</strong> Projected reward points earned daily (scales with your deposit amount)</li>
                     <li><strong>Total Expected Points:</strong> Total points by maturity date (scales with your deposit amount)</li>
@@ -762,18 +764,17 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>LAST DAY VALUE</h3>
+                  <div className="info-section-label">Last Day Value</div>
                   <ul>
                     <li><strong>Current IY:</strong> Expected YT value based on current market yield</li>
                     <li><strong>Lower IY:</strong> Expected YT value if yield drops to lower bound</li>
                     <li>Shows percentage of your investment remaining at 1 day from maturity</li>
                   </ul>
                 </div>
-
-                <div className="info-tips">
-                  <p>💡 <strong>Tip:</strong> All point calculations update based on your "Deposit Amount" setting</p>
-                  <p>💡 <strong>Note:</strong> Data updates every 5 minutes. When someone visits and if last updated &lt;10 minutes - hard refresh (1.5-2 Minutes)</p>
-                </div>
+              </div>
+              <div className="info-tips">
+                <p>💡 <strong>Tip:</strong> All point calculations update based on your "Deposit Amount" setting</p>
+                <p>💡 <strong>Note:</strong> Data updates every 5 minutes. When someone visits and if last updated &gt;10 minutes — hard refresh (1.5-2 Minutes)</p>
               </div>
             </div>
           </div>
