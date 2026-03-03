@@ -287,7 +287,10 @@ const StrategyDashboard: React.FC = () => {
 
   const formatLargeNumber = (value: number | null | undefined): string => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + 'K';
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + 'B';
+    if (abs >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
+    if (abs >= 1_000) return (value / 1_000).toFixed(1) + 'K';
     return Math.round(value).toLocaleString();
   };
 
