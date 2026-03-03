@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ArrowUpDown, RefreshCw, Info } from 'lucide-react';
+import { Search, RefreshCw, Info, LayoutGrid, List, BarChart3 } from 'lucide-react';
 import type { AssetData } from '../services/ratexApi';
 import { fetchAllAssets, getLastUpdated, checkAndRefreshIfStale } from '../services/ratexApi';
 import AssetCard from '../components/AssetCard';
 import '../components/Dashboard.css';
 
 type SortOption = 'maturity' | 'leverage' | 'points' | 'dailyYield' | 'pointsPerDay' | 'risk';
+type ViewMode = 'cards' | 'table';
 
 const StrategyDashboard: React.FC = () => {
   const [assets, setAssets] = useState<AssetData[]>([]);
@@ -20,6 +21,8 @@ const StrategyDashboard: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [hasCheckedInitialFilter, setHasCheckedInitialFilter] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Define the projects to show in filters (in order)
   const FILTER_PROJECTS = ['Hylo', 'Huma', 'Perena', 'Onre'];
@@ -264,27 +267,71 @@ const StrategyDashboard: React.FC = () => {
     }
   };
 
+  const toggleExpandedRow = (assetName: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(assetName)) {
+        next.delete(assetName);
+      } else {
+        next.add(assetName);
+      }
+      return next;
+    });
+  };
+
+  // Format helpers for table view
+  const formatTableNumber = (value: number | null | undefined, decimals = 2): string => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    return value.toFixed(decimals);
+  };
+
+  const formatLargeNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + 'K';
+    return Math.round(value).toLocaleString();
+  };
+
+  // Get maturity display string
+  const getMaturityDisplay = (asset: AssetData): string => {
+    if (!asset.maturityDays && asset.maturityDays !== 0) return 'N/A';
+    const days = Math.floor(asset.maturityDays);
+    const hours = Math.round((asset.maturityDays - days) * 24);
+    return `${days}d ${hours}h`;
+  };
+
+  // Group assets by source for table view
+  const getGroupedAssets = () => {
+    const exponentAssets = filteredAssets.filter(a => a.source === 'exponent');
+    const ratexAssets = filteredAssets.filter(a => a.source === 'ratex');
+    return { exponentAssets, ratexAssets };
+  };
+
+  // Get asset icon URL — uses same field as card view (assetSymbolImage)
+  const getAssetIconUrl = (asset: AssetData): string | null => {
+    return asset.assetSymbolImage || null;
+  };
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-container">
-      {/* Header */}
+      {/* Header — left-aligned */}
       <div className="dashboard-header">
         <div className="dashboard-title-section">
-          <h1 className="dashboard-title">YT's Strategy/Risk Dashboard</h1>
-          <p className="dashboard-subtitle">Monitor leveraged yield positions</p>
+          <h1 className="dashboard-title">YT Strategy Dashboard</h1>
+          <p className="dashboard-subtitle">
+            Monitor leveraged yield positions
+            {lastUpdated && (
+              <span className="dashboard-updated-inline"> · Updated {getRelativeTime(lastUpdated)}</span>
+            )}
+          </p>
         </div>
-        {lastUpdated && (
-          <div className="dashboard-updated">
-            Last updated: {getRelativeTime(lastUpdated)}
-          </div>
-        )}
       </div>
 
-        {/* Controls */}
+        {/* Controls Row */}
         <div className="dashboard-controls">
           {/* Search */}
           <div className="search-box">
-            <Search size={18} className="search-icon" />
+            <Search size={14} className="search-icon" />
             <input
               type="text"
               placeholder="Search assets..."
@@ -295,105 +342,117 @@ const StrategyDashboard: React.FC = () => {
           </div>
 
           {/* Sort By */}
-          <div className="sort-box">
-            <ArrowUpDown size={18} className="sort-icon" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="sort-select"
-            >
-              <option value="maturity">Sort by: Closest Maturity</option>
-              <option value="points">Sort by: Total Points</option>
-              <option value="pointsPerDay">Sort by: Points/Day</option>
-              <option value="dailyYield">Sort by: Daily Yield</option>
-              <option value="leverage">Sort by: Leverage</option>
-              <option value="risk">Sort by: Lowest Risk</option>
-            </select>
-          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="sort-select"
+          >
+            <option value="maturity">Sort by: Closest Maturity</option>
+            <option value="points">Sort by: Total Points</option>
+            <option value="pointsPerDay">Sort by: Points/Day</option>
+            <option value="dailyYield">Sort by: Daily Yield</option>
+            <option value="leverage">Sort by: Leverage</option>
+            <option value="risk">Sort by: Lowest Risk</option>
+          </select>
 
           {/* Info Button */}
           <button
             onClick={() => setShowInfoModal(true)}
-            className="info-button"
+            className="icon-btn"
             title="Understanding metrics"
           >
-            <Info size={18} />
+            <Info size={16} />
           </button>
 
           {/* Refresh Button */}
           <button
             onClick={loadAssets}
             disabled={isLoading}
-            className="refresh-button"
+            className="icon-btn"
             title="Refresh data"
           >
-            <RefreshCw size={18} className={isLoading ? 'refresh-icon-spinning' : ''} />
+            <RefreshCw size={16} className={isLoading ? 'refresh-icon-spinning' : ''} />
           </button>
+
+          {/* Right side: view toggle + deposit input */}
+          <div className="controls-right">
+            <div className="view-toggle">
+              <button
+                className={viewMode === 'cards' ? 'active' : ''}
+                onClick={() => setViewMode('cards')}
+              >
+                <LayoutGrid size={13} />
+                Cards
+              </button>
+              <button
+                className={viewMode === 'table' ? 'active' : ''}
+                onClick={() => setViewMode('table')}
+              >
+                <List size={13} />
+                Table
+              </button>
+            </div>
+            <div className="deposit-control">
+              <span className="deposit-label">Deposit Amount</span>
+              <div className="deposit-input-wrapper">
+                <span className="dollar">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                  className="deposit-input"
+                  placeholder="1"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Project Filters */}
-        <div className="project-filters">
-          <span className="filter-label">Projects:</span>
+        {/* Filter Pills */}
+        <div className="filters-row">
+          <span className="filter-group-label">Projects:</span>
           <button
             className={`filter-pill ${selectedProjects.length === 0 ? 'active' : ''}`}
             onClick={selectAllProjects}
           >
-            All <span className="filter-count">{assets.length}</span>
+            All <span className="count">{assets.length}</span>
           </button>
           {FILTER_PROJECTS.map(projectName => {
             const count = getProjectCount(projectName);
             const isActive = selectedProjects.includes(projectName);
-            
             return (
               <button
                 key={projectName}
                 className={`filter-pill ${isActive ? 'active' : ''}`}
                 onClick={() => toggleProjectFilter(projectName)}
               >
-                {projectName} <span className="filter-count">{count}</span>
+                {projectName} <span className="count">{count}</span>
               </button>
             );
           })}
-          {/* Others button */}
           <button
             className={`filter-pill ${selectedProjects.includes('Others') ? 'active' : ''}`}
             onClick={() => toggleProjectFilter('Others')}
           >
-            Others <span className="filter-count">{getProjectCount('Others')}</span>
+            Others <span className="count">{getProjectCount('Others')}</span>
           </button>
-          
-          {/* Source Filters */}
-          <span className="filter-separator">|</span>
-          <span className="filter-label">Source:</span>
+
+          <div className="filter-separator"></div>
+          <span className="filter-group-label">Source:</span>
           <button
-            className={`filter-pill filter-pill-ratex ${selectedSources.includes('ratex') ? 'active' : ''}`}
+            className={`filter-pill source-ratex ${selectedSources.includes('ratex') ? 'active' : ''}`}
             onClick={() => toggleSourceFilter('ratex')}
           >
-            Rate-X <span className="filter-count">{getSourceCount('ratex')}</span>
+            Rate-X <span className="count">{getSourceCount('ratex')}</span>
           </button>
           <button
-            className={`filter-pill filter-pill-exponent ${selectedSources.includes('exponent') ? 'active' : ''}`}
+            className={`filter-pill source-exponent ${selectedSources.includes('exponent') ? 'active' : ''}`}
             onClick={() => toggleSourceFilter('exponent')}
           >
-            Exponent <span className="filter-count">{getSourceCount('exponent')}</span>
+            Exponent <span className="count">{getSourceCount('exponent')}</span>
           </button>
-          
-          {/* Amount Input */}
-          <div className="amount-input-container">
-            <label className="amount-label">Deposit Amount</label>
-            <div className="amount-input-wrapper">
-              <span className="amount-currency">$</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                className="amount-input"
-                placeholder="1"
-              />
-            </div>
-          </div>
         </div>
 
         {/* Content */}
@@ -417,11 +476,231 @@ const StrategyDashboard: React.FC = () => {
                 : 'No assets available'}
             </p>
           </div>
-        ) : (
+        ) : viewMode === 'cards' ? (
           <div className="dashboard-grid">
             {filteredAssets.map((asset) => (
               <AssetCard key={asset.asset} asset={asset} depositAmount={depositAmount} />
             ))}
+          </div>
+        ) : (
+          /* ── TABLE VIEW ── */
+          <div className="table-container">
+            {(() => {
+              const { exponentAssets, ratexAssets } = getGroupedAssets();
+              const renderTableSection = (sectionAssets: AssetData[], sourceLabel: string, sourceClass: string) => {
+                if (sectionAssets.length === 0) return null;
+                return (
+                  <React.Fragment key={sourceLabel}>
+                    <div className="source-group-header" style={sourceLabel === 'Rate-X' ? { marginTop: 8 } : undefined}>
+                      <span className={`dot ${sourceClass}`}></span>
+                      {sourceLabel} · {sectionAssets.length} assets
+                    </div>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: '22%' }}>Asset</th>
+                          <th className="mobile-hide">Source</th>
+                          <th className="right">Leverage</th>
+                          <th className="right mobile-hide">Impl. Yield</th>
+                          <th className="right mobile-hide">APY</th>
+                          <th className="right mobile-hide">Daily Decay</th>
+                          <th className="right">Daily Yield</th>
+                          <th className="right mobile-hide">Price Range</th>
+                          <th className="right mobile-hide">Dside Risk</th>
+                          <th className="right">Points/Day</th>
+                          <th style={{ width: 28 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sectionAssets.map((asset) => {
+                          const isExpanded = expandedRows.has(asset.asset);
+                          const iconUrl = getAssetIconUrl(asset);
+                          const leverage = asset.leverage;
+                          const impliedYield = asset.impliedYield;
+                          const apy = asset.apy;
+                          const dailyDecay = asset.dailyDecayRate;
+                          const dailyYield = asset.dailyYieldRate;
+                          const downsideRisk = asset.downsideRisk;
+                          const priceRange = asset.ytPriceLower !== null && asset.ytPriceLower !== undefined && asset.ytPriceLower > 0
+                            ? `${asset.ytPriceLower.toFixed(4)}${asset.ytPriceUpper && asset.ytPriceUpper > 0 ? ` – ${asset.ytPriceUpper.toFixed(4)}` : ' – N/A'}`
+                            : 'N/A';
+                          const pointsPerDay = asset.expectedPointsPerDay;
+                          const totalPoints = asset.totalExpectedPoints;
+
+                          return (
+                            <React.Fragment key={asset.asset}>
+                              <tr
+                                onClick={() => toggleExpandedRow(asset.asset)}
+                                style={isExpanded ? { background: 'var(--bg-surface-2)' } : undefined}
+                              >
+                                <td>
+                                  <div className="table-identity">
+                                    <div className="table-icon">
+                                      {iconUrl ? (
+                                        <img src={iconUrl} alt="" />
+                                      ) : (
+                                        <span style={{ fontFamily: 'var(--f-ui)', fontWeight: 700, fontSize: 13, color: 'var(--text-2)' }}>
+                                          {(asset.baseAsset || asset.asset).charAt(0).toUpperCase()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="table-name-block">
+                                      <span className="table-name">{asset.asset}</span>
+                                      <span className="table-maturity-tag">⏱ {getMaturityDisplay(asset)}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="mobile-hide">
+                                  <span className={`table-badge ${sourceClass}`}>{sourceLabel}</span>
+                                  {asset.assetBoost !== null && asset.assetBoost > 1 && (
+                                    <div className="table-boost-pills">
+                                      <span className="table-boost-pill">{asset.assetBoost}× Asset</span>
+                                      {asset.ratexBoost !== null && asset.ratexBoost > 1 && (
+                                        <span className="table-boost-pill ratex-boost">{asset.ratexBoost}× RateX</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="right">
+                                  <span className="tv">
+                                    {formatTableNumber(leverage)}<span className="unit">×</span>
+                                  </span>
+                                </td>
+                                <td className="right mobile-hide">
+                                  <span className="tv">
+                                    {formatTableNumber(impliedYield)}<span className="unit">%</span>
+                                  </span>
+                                </td>
+                                <td className="right mobile-hide">
+                                  <span className={`tv ${!apy || apy === 0 ? 'muted' : ''}`}>
+                                    {formatTableNumber(apy)}<span className="unit">%</span>
+                                  </span>
+                                </td>
+                                <td className="right mobile-hide">
+                                  <span className={`tv ${dailyDecay && dailyDecay > 0 ? 'warning' : 'muted'}`}>
+                                    {formatTableNumber(dailyDecay)}<span className="unit">%</span>
+                                  </span>
+                                </td>
+                                <td className="right">
+                                  <span className={`tv ${dailyYield && dailyYield > 0 ? 'success' : 'muted'}`}>
+                                    {formatTableNumber(dailyYield)}<span className="unit">%</span>
+                                  </span>
+                                </td>
+                                <td className="right mobile-hide">
+                                  <span className={`tv ${priceRange === 'N/A' ? 'muted' : 'purple'}`}>
+                                    {priceRange}
+                                  </span>
+                                </td>
+                                <td className="right mobile-hide">
+                                  <span className={`tv ${downsideRisk !== null && downsideRisk !== undefined ? 'danger' : 'muted'}`}>
+                                    {downsideRisk !== null && downsideRisk !== undefined
+                                      ? <>{Math.abs(downsideRisk).toFixed(1)}<span className="unit">%</span></>
+                                      : 'N/A'}
+                                  </span>
+                                </td>
+                                <td className="right">
+                                  <div className="table-points-cell">
+                                    <span className="table-points-val">
+                                      {formatLargeNumber(pointsPerDay ? pointsPerDay * depositAmount : null)}
+                                    </span>
+                                    <span className="table-points-sub">
+                                      {formatLargeNumber(totalPoints ? totalPoints * depositAmount : null)} total
+                                    </span>
+                                  </div>
+                                </td>
+                                <td style={{ width: 28, padding: '12px 8px' }}>
+                                  <button className="expand-btn" onClick={(e) => { e.stopPropagation(); toggleExpandedRow(asset.asset); }}>
+                                    {isExpanded ? '▾' : '▸'}
+                                  </button>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr>
+                                  <td colSpan={11} style={{ padding: 0 }}>
+                                    <div className="expanded-detail">
+                                      <div className="detail-group">
+                                        <h4>Risk Metrics</h4>
+                                        <div className="detail-row">
+                                          <span className="dl">Recovery</span>
+                                          <span className={`dv ${asset.expectedRecoveryYield && asset.expectedRecoveryYield > 0 ? 'success' : ''}`}>
+                                            {formatTableNumber(asset.expectedRecoveryYield)}%
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Daily Decay Rate</span>
+                                          <span className={`dv ${dailyDecay && dailyDecay > 0 ? 'warning' : ''}`}>
+                                            {formatTableNumber(dailyDecay)}%
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Last Day Value</span>
+                                          <span className={`dv ${asset.endDayCurrentYield ? 'danger' : ''}`}>
+                                            {formatTableNumber(asset.endDayCurrentYield)}%
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Lower IY</span>
+                                          <span className="dv">
+                                            {formatTableNumber(asset.endDayLowerYield)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="detail-group">
+                                        <h4>Today's Analysis</h4>
+                                        <div className="detail-row">
+                                          <span className="dl">Daily Yield Rate</span>
+                                          <span className={`dv ${dailyYield && dailyYield > 0 ? 'success' : 'muted'}`}>
+                                            {formatTableNumber(dailyYield)}%
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Downside Risk</span>
+                                          <span className={`dv ${downsideRisk !== null && downsideRisk !== undefined ? 'danger' : 'muted'}`}>
+                                            {downsideRisk !== null && downsideRisk !== undefined ? `${Math.abs(downsideRisk).toFixed(1)}%` : 'N/A'}
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Price Range</span>
+                                          <span className={`dv ${priceRange === 'N/A' ? 'muted' : ''}`}>
+                                            {priceRange}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="detail-group">
+                                        <h4>Projected Points</h4>
+                                        <div className="detail-row">
+                                          <span className="dl">Expected / Day</span>
+                                          <span className="dv warning" style={{ fontSize: 18 }}>
+                                            {formatLargeNumber(pointsPerDay ? pointsPerDay * depositAmount : null)}
+                                          </span>
+                                        </div>
+                                        <div className="detail-row">
+                                          <span className="dl">Total Expected</span>
+                                          <span className="dv warning" style={{ fontSize: 18 }}>
+                                            {formatLargeNumber(totalPoints ? totalPoints * depositAmount : null)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </React.Fragment>
+                );
+              };
+
+              return (
+                <>
+                  {renderTableSection(exponentAssets, 'Exponent', 'exponent')}
+                  {renderTableSection(ratexAssets, 'Rate-X', 'ratex')}
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -430,17 +709,19 @@ const StrategyDashboard: React.FC = () => {
           <div className="modal-overlay" onClick={() => setShowInfoModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>
-                  <span className="modal-emoji">📊</span>
-                  <span className="modal-title-text">Understanding Asset Card Metrics</span>
-                </h2>
+                <div className="modal-header-left">
+                  <div className="modal-header-icon">
+                    <BarChart3 size={18} />
+                  </div>
+                  <h2>Understanding Asset Card Metrics</h2>
+                </div>
                 <button className="modal-close" onClick={() => setShowInfoModal(false)}>
                   ×
                 </button>
               </div>
               <div className="modal-body">
                 <div className="info-section">
-                  <h3>CORE METRICS</h3>
+                  <div className="info-section-label">Core Metrics</div>
                   <ul>
                     <li><strong>Asset Name:</strong> The yield-bearing token (Base Asset)</li>
                     <li><strong>Maturity Timer:</strong> Time till yield token expires</li>
@@ -448,14 +729,14 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>PRICE & RANGE</h3>
+                  <div className="info-section-label">Price & Range</div>
                   <ul>
                     <li><strong>Price Range:</strong> Expected price fluctuation range based on Implied Yield Range</li>
                   </ul>
                 </div>
 
                 <div className="info-section">
-                  <h3>YIELD & LEVERAGE</h3>
+                  <div className="info-section-label">Yield & Leverage</div>
                   <ul>
                     <li><strong>Underlying APY:</strong> Annual Percentage Yield at current market conditions, a 7-day Average</li>
                     <li><strong>Implied Yield:</strong> Market's expected yield based on YT pricing</li>
@@ -464,9 +745,9 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>PERFORMANCE METRICS</h3>
+                  <div className="info-section-label">Performance Metrics</div>
                   <ul>
-                    <li><strong>Expected Recovery Yield:</strong> Total Percentage Recovery of underlyin asset (Not $ value) possible through Yields, if hold till maturity</li>
+                    <li><strong>Expected Recovery Yield:</strong> Total Percentage Recovery of underlying asset (Not $ value) possible through Yields, if hold till maturity</li>
                     <li><strong>Daily Decay Rate:</strong> Daily percentage decrease in yield value due to time passing, for the same Implied Yield. Decay happens during Yield distribution</li>
                     <li><strong>Upside Potential:</strong> Maximum potential gain possible for today if implied yield increases to upper range (Approx. with deviation of 0.5-1%)</li>
                     <li><strong>Downside Risk:</strong> Maximum Potential loss possible for today if implied yield decreases to lower range (Approx. with deviation of 0.5-1%)</li>
@@ -474,7 +755,7 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>POINTS TRACKING</h3>
+                  <div className="info-section-label">Points Tracking</div>
                   <ul>
                     <li><strong>Expected Points/Day:</strong> Projected reward points earned daily (scales with your deposit amount)</li>
                     <li><strong>Total Expected Points:</strong> Total points by maturity date (scales with your deposit amount)</li>
@@ -483,29 +764,28 @@ const StrategyDashboard: React.FC = () => {
                 </div>
 
                 <div className="info-section">
-                  <h3>LAST DAY YT VALUE</h3>
+                  <div className="info-section-label">Last Day Value</div>
                   <ul>
-                    <li><strong>Current Implied Yield:</strong> Expected YT value based on current market yield</li>
-                    <li><strong>Yield's Lower Range:</strong> Expected YT value if yield drops to lower bound</li>
+                    <li><strong>Current IY:</strong> Expected YT value based on current market yield</li>
+                    <li><strong>Lower IY:</strong> Expected YT value if yield drops to lower bound</li>
                     <li>Shows percentage of your investment remaining at 1 day from maturity</li>
                   </ul>
                 </div>
-
-                <div className="info-tips">
-                  <p>💡 <strong>Tip:</strong> All point calculations update based on your "Deposit Amount" setting</p>
-                  <p>💡 <strong>Note:</strong> Data updates every 5 minutes. When someone visits and if last updated &lt;10 minutes - hard refresh (1.5-2 Minutes)</p>
-                </div>
+              </div>
+              <div className="info-tips">
+                <p>💡 <strong>Tip:</strong> All point calculations update based on your "Deposit Amount" setting</p>
+                <p>💡 <strong>Note:</strong> Data updates every 5 minutes. When someone visits and if last updated &gt;10 minutes — hard refresh (1.5-2 Minutes)</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Footer Info */}
-        <div className="home-footer">
-          <p>
-            Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
-          </p>
-        </div>
+      </div>
+      <div className="home-footer">
+        <p>
+          Data is automatically updated every 5 minutes. If data is older than 10 minutes when someone visits, a hard refresh (1-2 minutes) updates all metrics to ensure accuracy.
+        </p>
       </div>
     </div>
   );
