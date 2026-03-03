@@ -499,14 +499,14 @@ const StrategyDashboard: React.FC = () => {
                       <thead>
                         <tr>
                           <th style={{ width: '22%' }}>Asset</th>
-                          <th>Source</th>
+                          <th className="mobile-hide">Source</th>
                           <th className="right">Leverage</th>
-                          <th className="right">Impl. Yield</th>
-                          <th className="right">APY</th>
-                          <th className="right">Daily Decay</th>
+                          <th className="right mobile-hide">Impl. Yield</th>
+                          <th className="right mobile-hide">APY</th>
+                          <th className="right mobile-hide">Daily Decay</th>
                           <th className="right">Daily Yield</th>
-                          <th className="right">Price Range</th>
-                          <th className="right">Dside Risk</th>
+                          <th className="right mobile-hide">Price Range</th>
+                          <th className="right mobile-hide">Dside Risk</th>
                           <th className="right">Points/Day</th>
                           <th style={{ width: 28 }}></th>
                         </tr>
@@ -550,7 +550,7 @@ const StrategyDashboard: React.FC = () => {
                                     </div>
                                   </div>
                                 </td>
-                                <td>
+                                <td className="mobile-hide">
                                   <span className={`table-badge ${sourceClass}`}>{sourceLabel}</span>
                                   {asset.assetBoost !== null && asset.assetBoost > 1 && (
                                     <div className="table-boost-pills">
@@ -566,17 +566,17 @@ const StrategyDashboard: React.FC = () => {
                                     {formatTableNumber(leverage)}<span className="unit">×</span>
                                   </span>
                                 </td>
-                                <td className="right">
+                                <td className="right mobile-hide">
                                   <span className="tv">
                                     {formatTableNumber(impliedYield)}<span className="unit">%</span>
                                   </span>
                                 </td>
-                                <td className="right">
+                                <td className="right mobile-hide">
                                   <span className={`tv ${!apy || apy === 0 ? 'muted' : ''}`}>
                                     {formatTableNumber(apy)}<span className="unit">%</span>
                                   </span>
                                 </td>
-                                <td className="right">
+                                <td className="right mobile-hide">
                                   <span className={`tv ${dailyDecay && dailyDecay > 0 ? 'warning' : 'muted'}`}>
                                     {formatTableNumber(dailyDecay)}<span className="unit">%</span>
                                   </span>
@@ -586,12 +586,12 @@ const StrategyDashboard: React.FC = () => {
                                     {formatTableNumber(dailyYield)}<span className="unit">%</span>
                                   </span>
                                 </td>
-                                <td className="right">
+                                <td className="right mobile-hide">
                                   <span className={`tv ${priceRange === 'N/A' ? 'muted' : 'purple'}`}>
                                     {priceRange}
                                   </span>
                                 </td>
-                                <td className="right">
+                                <td className="right mobile-hide">
                                   <span className={`tv ${downsideRisk !== null && downsideRisk !== undefined ? 'danger' : 'muted'}`}>
                                     {downsideRisk !== null && downsideRisk !== undefined
                                       ? <>{Math.abs(downsideRisk).toFixed(1)}<span className="unit">%</span></>

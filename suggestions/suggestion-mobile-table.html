@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mobile Table View — 3 Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-base: #0B0D14;
+    --bg-surface: #111322;
+    --bg-surface-2: #171929;
+    --bg-surface-3: #1C1F32;
+    --violet: #7C3AED;
+    --violet-mid: #8B5CF6;
+    --teal: #2DD4BF;
+    --green: #10B981;
+    --amber: #F59E0B;
+    --red: #EF4444;
+    --white: #F8FAFC;
+    --text: #CBD5E1;
+    --text-2: #A3B1C6;
+    --muted: #5A6485;
+    --border: rgba(148,163,184,0.08);
+    --border-2: rgba(148,163,184,0.15);
+    --f-ui: 'Outfit', sans-serif;
+    --f-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--f-ui);
+    background: #080A10;
+    color: var(--text);
+    padding: 40px 20px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-2);
+    margin-bottom: 48px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  /* Layout: 3 phones side by side */
+  .options-row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .option-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 390px;
+    width: 100%;
+  }
+
+  .option-label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .option-label.a { color: var(--violet-mid); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); }
+  .option-label.b { color: var(--teal); background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.2); }
+  .option-label.c { color: var(--green); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); }
+
+  .option-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+  .option-desc {
+    font-size: 11px;
+    color: var(--text-2);
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 375px;
+    min-height: 600px;
+    border-radius: 24px;
+    border: 2px solid var(--border-2);
+    background: var(--bg-base);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .phone-notch {
+    width: 120px;
+    height: 24px;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    margin: 0 auto;
+  }
+
+  .phone-content {
+    padding: 8px;
+  }
+
+  /* ========================================
+     OPTION A — Hide columns, tap to expand
+     ======================================== */
+  .opt-a-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 10px 6px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .opt-a-header .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  .opt-a-table {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .opt-a-table-stripe {
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--violet-mid) 40%, #3B82F6);
+  }
+
+  .opt-a-thead {
+    display: grid;
+    grid-template-columns: 1fr 52px 64px 54px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+  }
+  .opt-a-thead span {
+    font-family: var(--f-mono);
+    font-size: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .opt-a-thead span:not(:first-child) { text-align: right; }
+
+  .opt-a-row {
+    display: grid;
+    grid-template-columns: 1fr 52px 64px 54px;
+    padding: 10px 12px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .opt-a-row:last-child { border-bottom: none; }
+
+  .opt-a-asset {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .opt-a-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-surface-3);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+  .opt-a-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .opt-a-maturity {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  .opt-a-val { font-family: var(--f-mono); font-size: 12px; text-align: right; }
+  .opt-a-val.green { color: var(--green); }
+  .opt-a-val.white { color: var(--white); }
+  .opt-a-val .unit { font-size: 9px; color: var(--muted); margin-left: 1px; }
+
+  /* Expanded detail */
+  .opt-a-expanded {
+    background: var(--bg-surface-2);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+  }
+  .opt-a-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .opt-a-detail-label {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .opt-a-detail-val {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text);
+  }
+  .opt-a-detail-val.red { color: var(--red); }
+  .opt-a-detail-val.amber { color: var(--amber); }
+  .opt-a-detail-val.muted { color: var(--muted); }
+
+  .opt-a-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 8px 0 4px;
+    font-style: italic;
+  }
+
+  /* ========================================
+     OPTION B — Card-style stacked rows
+     ======================================== */
+  .opt-b-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .opt-b-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 4px 6px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .opt-b-header .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--violet-mid);
+  }
+
+  .opt-b-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .opt-b-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--violet-mid) 40%, #3B82F6);
+  }
+
+  .opt-b-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .opt-b-asset {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .opt-b-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-surface-3);
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-2);
+  }
+  .opt-b-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .opt-b-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .opt-b-badge {
+    font-family: var(--f-mono);
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(139,92,246,0.12);
+    color: var(--violet-mid);
+  }
+  .opt-b-badge.exp { background: rgba(16,185,129,0.12); color: var(--green); }
+  .opt-b-timer {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  .opt-b-lev {
+    font-family: var(--f-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+  }
+  .opt-b-lev .unit { font-size: 11px; color: var(--muted); }
+
+  .opt-b-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .opt-b-metric {
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .opt-b-metric-label {
+    font-family: var(--f-mono);
+    font-size: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .opt-b-metric-val {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .opt-b-metric-val.green { color: var(--green); }
+  .opt-b-metric-val.red { color: var(--red); }
+  .opt-b-metric-val.white { color: var(--white); }
+  .opt-b-metric-val.muted { color: var(--muted); }
+  .opt-b-metric-val .unit { font-size: 9px; color: var(--muted); }
+
+  .opt-b-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* ========================================
+     OPTION C — Auto card view
+     ======================================== */
+  .opt-c-note {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+  .opt-c-note-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .opt-c-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .opt-c-card-top {
+    position: relative;
+    padding: 16px;
+  }
+  .opt-c-card-top::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--violet-mid) 40%, #3B82F6);
+  }
+
+  .opt-c-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .opt-c-asset {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .opt-c-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-surface-3);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-2);
+  }
+  .opt-c-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .opt-c-base {
+    font-size: 11px;
+    color: var(--text-2);
+    margin-top: 1px;
+  }
+
+  .opt-c-timer-pill {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-2);
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .opt-c-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .opt-c-metric {
+    text-align: center;
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 6px;
+  }
+  .opt-c-metric-label {
+    font-family: var(--f-mono);
+    font-size: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .opt-c-metric-val {
+    font-family: var(--f-mono);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .opt-c-metric-val.green { color: var(--green); }
+  .opt-c-metric-val.red { color: var(--red); }
+  .opt-c-metric-val.white { color: var(--white); }
+  .opt-c-metric-val .unit { font-size: 9px; color: var(--muted); }
+
+  .opt-c-desc {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 10px;
+    line-height: 1.6;
+  }
+
+  /* Pros / Cons */
+  .annotation {
+    margin-top: 16px;
+    padding: 14px;
+    background: rgba(139,92,246,0.05);
+    border: 1px solid rgba(139,92,246,0.12);
+    border-radius: 10px;
+  }
+  .annotation h4 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--violet-mid);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .annotation ul { list-style: none; }
+  .annotation li {
+    font-size: 11px;
+    color: var(--text-2);
+    line-height: 1.6;
+    padding-left: 14px;
+    position: relative;
+  }
+  .annotation li::before {
+    position: absolute;
+    left: 0;
+  }
+  .annotation li.pro::before { content: '✓'; color: var(--green); }
+  .annotation li.con::before { content: '✗'; color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="page-title">Mobile Table View — 3 Options</div>
+<div class="page-sub">
+  The current table requires horizontal scrolling on mobile (min-width: 800px for 10 columns).<br>
+  Below are 3 approaches. Each phone mockup simulates a 375px viewport.
+</div>
+
+<div class="options-row">
+
+  <!-- ===== OPTION A ===== -->
+  <div class="option-block">
+    <span class="option-label a">Option A</span>
+    <div class="option-title">Hide Columns + Tap to Expand</div>
+    <div class="option-desc">Show only 4 key columns. Tap any row to reveal all metrics in an expanded panel.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-content">
+        <div class="opt-a-header">
+          <span class="dot"></span>
+          Exponent · 14 assets
+        </div>
+
+        <div class="opt-a-table">
+          <div class="opt-a-table-stripe"></div>
+          <div class="opt-a-thead">
+            <span>Asset</span>
+            <span>Lev.</span>
+            <span>Yield/D</span>
+            <span>Pts/D</span>
+          </div>
+
+          <div class="opt-a-row">
+            <div class="opt-a-asset">
+              <div class="opt-a-icon">x</div>
+              <div>
+                <div class="opt-a-name">xSOL-..DEC25</div>
+                <div class="opt-a-maturity">⏱ 274d</div>
+              </div>
+            </div>
+            <div class="opt-a-val white">3.2<span class="unit">×</span></div>
+            <div class="opt-a-val green">0.029<span class="unit">%</span></div>
+            <div class="opt-a-val white">842</div>
+          </div>
+
+          <!-- Expanded row -->
+          <div class="opt-a-expanded">
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">Impl. Yield</span>
+              <span class="opt-a-detail-val">5.42%</span>
+            </div>
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">APY</span>
+              <span class="opt-a-detail-val">8.14%</span>
+            </div>
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">Daily Decay</span>
+              <span class="opt-a-detail-val amber">0.019%</span>
+            </div>
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">Dside Risk</span>
+              <span class="opt-a-detail-val red">2.1%</span>
+            </div>
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">Price Range</span>
+              <span class="opt-a-detail-val">0.0312 – 0.0485</span>
+            </div>
+            <div class="opt-a-detail">
+              <span class="opt-a-detail-label">Source</span>
+              <span class="opt-a-detail-val">Exponent</span>
+            </div>
+          </div>
+
+          <div class="opt-a-row">
+            <div class="opt-a-asset">
+              <div class="opt-a-icon">J</div>
+              <div>
+                <div class="opt-a-name">JitoSOL-..JUN25</div>
+                <div class="opt-a-maturity">⏱ 94d</div>
+              </div>
+            </div>
+            <div class="opt-a-val white">2.8<span class="unit">×</span></div>
+            <div class="opt-a-val green">0.041<span class="unit">%</span></div>
+            <div class="opt-a-val white">1.2K</div>
+          </div>
+
+          <div class="opt-a-row">
+            <div class="opt-a-asset">
+              <div class="opt-a-icon">h</div>
+              <div>
+                <div class="opt-a-name">hSOL-..SEP25</div>
+                <div class="opt-a-maturity">⏱ 183d</div>
+              </div>
+            </div>
+            <div class="opt-a-val white">4.1<span class="unit">×</span></div>
+            <div class="opt-a-val green">0.018<span class="unit">%</span></div>
+            <div class="opt-a-val white">654</div>
+          </div>
+
+          <div class="opt-a-row">
+            <div class="opt-a-asset">
+              <div class="opt-a-icon">U</div>
+              <div>
+                <div class="opt-a-name">USDC-..MAR25</div>
+                <div class="opt-a-maturity">⏱ 12d</div>
+              </div>
+            </div>
+            <div class="opt-a-val white">1.5<span class="unit">×</span></div>
+            <div class="opt-a-val green">0.052<span class="unit">%</span></div>
+            <div class="opt-a-val white">326</div>
+          </div>
+        </div>
+
+        <div class="opt-a-hint">Tap any row to see full details ↑</div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <h4>Pros & Cons</h4>
+      <ul>
+        <li class="pro">Minimal code change — CSS media query hides columns</li>
+        <li class="pro">No horizontal scrolling</li>
+        <li class="pro">Expand/collapse already exists</li>
+        <li class="con">Users can't compare all metrics at a glance</li>
+        <li class="con">Still looks like a cramped table on small screens</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION B ===== -->
+  <div class="option-block">
+    <span class="option-label b">Option B</span>
+    <div class="option-title">Card-style Stacked Rows</div>
+    <div class="option-desc">Each table row becomes a mini-card with a metric grid. More scannable than a table.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-content">
+        <div class="opt-b-list">
+          <div class="opt-b-header">
+            <span class="dot"></span>
+            Rate-X · 12 assets
+          </div>
+
+          <div class="opt-b-card">
+            <div class="opt-b-top">
+              <div class="opt-b-asset">
+                <div class="opt-b-icon">x</div>
+                <div>
+                  <div class="opt-b-name">xSOL-27DEC25</div>
+                  <div class="opt-b-meta">
+                    <span class="opt-b-badge">Rate-X</span>
+                    <span class="opt-b-timer">⏱ 274d</span>
+                  </div>
+                </div>
+              </div>
+              <div class="opt-b-lev">3.2<span class="unit">×</span></div>
+            </div>
+            <div class="opt-b-metrics">
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Impl. Yield</div>
+                <div class="opt-b-metric-val white">5.42<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Daily Yield</div>
+                <div class="opt-b-metric-val green">0.029<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Points/Day</div>
+                <div class="opt-b-metric-val white">842</div>
+              </div>
+            </div>
+            <div class="opt-b-row-2">
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Decay</div>
+                <div class="opt-b-metric-val red">0.019<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Dside Risk</div>
+                <div class="opt-b-metric-val red">2.1<span class="unit">%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="opt-b-card">
+            <div class="opt-b-top">
+              <div class="opt-b-asset">
+                <div class="opt-b-icon">J</div>
+                <div>
+                  <div class="opt-b-name">JitoSOL-26JUN25</div>
+                  <div class="opt-b-meta">
+                    <span class="opt-b-badge">Rate-X</span>
+                    <span class="opt-b-timer">⏱ 94d</span>
+                  </div>
+                </div>
+              </div>
+              <div class="opt-b-lev">2.8<span class="unit">×</span></div>
+            </div>
+            <div class="opt-b-metrics">
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Impl. Yield</div>
+                <div class="opt-b-metric-val white">7.81<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Daily Yield</div>
+                <div class="opt-b-metric-val green">0.041<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Points/Day</div>
+                <div class="opt-b-metric-val white">1.2K</div>
+              </div>
+            </div>
+            <div class="opt-b-row-2">
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Decay</div>
+                <div class="opt-b-metric-val red">0.031<span class="unit">%</span></div>
+              </div>
+              <div class="opt-b-metric">
+                <div class="opt-b-metric-label">Dside Risk</div>
+                <div class="opt-b-metric-val red">3.4<span class="unit">%</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <h4>Pros & Cons</h4>
+      <ul>
+        <li class="pro">All key metrics visible without scrolling or tapping</li>
+        <li class="pro">Consistent with card view design language</li>
+        <li class="pro">Good information density — 5 metrics per card</li>
+        <li class="pro">Leverage prominently displayed</li>
+        <li class="con">More vertical scrolling needed</li>
+        <li class="con">Medium implementation effort — new mobile-only layout</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== OPTION C ===== -->
+  <div class="option-block">
+    <span class="option-label c">Option C</span>
+    <div class="option-title">Auto-Switch to Card View</div>
+    <div class="option-desc">Force the existing card view on mobile. Hide the Cards/Table toggle entirely.</div>
+
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-content">
+
+        <div class="opt-c-note">
+          <span class="opt-c-note-icon">ℹ️</span>
+          Table view available on desktop. Showing card view for mobile.
+        </div>
+
+        <div class="opt-c-card">
+          <div class="opt-c-card-top">
+            <div class="opt-c-card-header">
+              <div class="opt-c-asset">
+                <div class="opt-c-icon">x</div>
+                <div>
+                  <div class="opt-c-name">xSOL-27DEC25</div>
+                  <div class="opt-c-base">Base: xSOL · Rate-X</div>
+                </div>
+              </div>
+              <span class="opt-c-timer-pill">⏱ 274d</span>
+            </div>
+
+            <div class="opt-c-metrics">
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Leverage</div>
+                <div class="opt-c-metric-val white">3.2<span class="unit">×</span></div>
+              </div>
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Daily Yield</div>
+                <div class="opt-c-metric-val green">0.029<span class="unit">%</span></div>
+              </div>
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Points/Day</div>
+                <div class="opt-c-metric-val white">842</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="opt-c-card">
+          <div class="opt-c-card-top">
+            <div class="opt-c-card-header">
+              <div class="opt-c-asset">
+                <div class="opt-c-icon">J</div>
+                <div>
+                  <div class="opt-c-name">JitoSOL-26JUN25</div>
+                  <div class="opt-c-base">Base: JitoSOL · Rate-X</div>
+                </div>
+              </div>
+              <span class="opt-c-timer-pill">⏱ 94d</span>
+            </div>
+
+            <div class="opt-c-metrics">
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Leverage</div>
+                <div class="opt-c-metric-val white">2.8<span class="unit">×</span></div>
+              </div>
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Daily Yield</div>
+                <div class="opt-c-metric-val green">0.041<span class="unit">%</span></div>
+              </div>
+              <div class="opt-c-metric">
+                <div class="opt-c-metric-label">Points/Day</div>
+                <div class="opt-c-metric-val white">1.2K</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="opt-c-desc">
+          This is the existing card view — already works well on mobile.<br>
+          No new layout needed. Just hide the toggle & force cards.
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation">
+      <h4>Pros & Cons</h4>
+      <ul>
+        <li class="pro">Zero new layout code — reuses existing card view</li>
+        <li class="pro">Card view already mobile-tested and working</li>
+        <li class="pro">Simplest and fastest to implement</li>
+        <li class="con">Users can't access table view on mobile at all</li>
+        <li class="con">Some power users might prefer tabular data</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
