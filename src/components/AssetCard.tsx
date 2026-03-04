@@ -194,7 +194,7 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, depositAmount = 1 }) => {
           <div className="ac-analysis-grid">
             <div className="ag-item">
               <div className="ag-label">Daily Yield</div>
-              <div className="ag-value success">{formatPercent(asset.dailyYieldRate, 2)}</div>
+              <div className={`ag-value ${asset.dailyYieldRate && asset.dailyYieldRate > 0 ? 'success' : ''}`}>{formatPercent(asset.dailyYieldRate, 2)}</div>
             </div>
             <div className="ag-item">
               <div className="ag-label">Downside Risk</div>
