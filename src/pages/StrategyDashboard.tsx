@@ -673,13 +673,13 @@ const StrategyDashboard: React.FC = () => {
                                         <h4>Projected Points</h4>
                                         <div className="detail-row">
                                           <span className="dl">Expected / Day</span>
-                                          <span className="dv warning" style={{ fontSize: 18 }}>
+                                          <span className="dv" style={{ fontSize: 18 }}>
                                             {formatLargeNumber(pointsPerDay ? pointsPerDay * depositAmount : null)}
                                           </span>
                                         </div>
                                         <div className="detail-row">
                                           <span className="dl">Total Expected</span>
-                                          <span className="dv warning" style={{ fontSize: 18 }}>
+                                          <span className="dv" style={{ fontSize: 18 }}>
                                             {formatLargeNumber(totalPoints ? totalPoints * depositAmount : null)}
                                           </span>
                                         </div>
