@@ -3273,6 +3273,11 @@
     gap: 6px !important;
   }
 
+  .pm-item {
+    text-align: center !important;
+    align-items: center !important;
+  }
+
   /* APY (3rd item) spans full width */
   .ac-primary .pm-item:nth-child(3) {
     grid-column: 1 / -1 !important;
