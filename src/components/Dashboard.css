@@ -3273,11 +3273,10 @@
     gap: 6px !important;
   }
 
-  /* APY (3rd item) spans full width centered */
+  /* APY (3rd item) spans full width */
   .ac-primary .pm-item:nth-child(3) {
     grid-column: 1 / -1 !important;
-    max-width: 50% !important;
-    justify-self: center !important;
+    text-align: center !important;
   }
 
   .pm-label {
@@ -3306,17 +3305,21 @@
     font-size: 13px !important;
   }
 
+  /* Center Recovery + Decay text to match Last Day Value */
+  .sm-box .sm-half {
+    text-align: center !important;
+    align-items: center !important;
+  }
+
   /* ===== ANALYSIS - 2-COL PAIRS ===== */
   .ac-analysis-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 6px !important;
   }
 
-  /* Price Range (3rd item) spans full width centered */
+  /* Price Range (3rd item) spans full width */
   .ac-analysis-grid .ag-item:nth-child(3) {
     grid-column: 1 / -1 !important;
-    max-width: 50% !important;
-    justify-self: center !important;
   }
 
   .ag-label {
