@@ -5,7 +5,7 @@
 
 async function analyzeCard() {
   try {
-    const url = 'https://www.exponent.finance/farm';
+    const url = 'https://v1.exponent.finance/farm';
     console.log(`Fetching: ${url}\n`);
     
     const response = await fetch(url, {

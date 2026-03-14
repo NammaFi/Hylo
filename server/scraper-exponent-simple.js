@@ -11,7 +11,7 @@ export async function scrapeExponentAssets() {
   try {
     console.log('🚀 Starting Exponent Finance scraper (simple mode)...');
     
-    const url = 'https://www.exponent.finance/farm';
+    const url = 'https://v1.exponent.finance/farm';
     console.log(`Fetching: ${url}`);
     
     const response = await fetch(url, {
@@ -129,7 +129,7 @@ export async function scrapeExponentAssetDetail(assetName) {
     const dateStr = dateMatch ? dateMatch[1].toLowerCase() : '';
     
     // Construct detail page URL
-    const url = `https://www.exponent.finance/farm/${baseAsset}-${dateStr}`;
+    const url = `https://v1.exponent.finance/farm/${baseAsset}-${dateStr}`;
     console.log(`Fetching: ${url}`);
     
     const response = await fetch(url, {

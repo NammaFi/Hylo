@@ -27,7 +27,7 @@ async function testExponentImageMapping() {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     
     console.log('📡 Navigating to Exponent Finance farm page...');
-    await page.goto('https://www.exponent.finance/farm', {
+    await page.goto('https://v1.exponent.finance/farm', {
       waitUntil: 'networkidle0',
       timeout: 90000
     });
@@ -155,7 +155,7 @@ async function testExponentImageMapping() {
       const match = item.image.src.match(/\/tokens\/([^/.]+)\.svg/);
       const tokenAddress = match ? match[1] : null;
       if (tokenAddress) {
-        console.log(`  '${item.baseAsset}': 'https://www.exponent.finance/images/icons/tokens/${tokenAddress}.svg',`);
+        console.log(`  '${item.baseAsset}': 'https://v1.exponent.finance/images/icons/tokens/${tokenAddress}.svg',`);
       }
     });
     console.log('};');
