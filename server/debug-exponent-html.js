@@ -4,7 +4,7 @@
 
 async function debugHTML() {
   try {
-    const url = 'https://www.exponent.finance/farm';
+    const url = 'https://v1.exponent.finance/farm';
     console.log(`Fetching: ${url}`);
     
     const response = await fetch(url, {

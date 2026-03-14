@@ -151,8 +151,8 @@ export async function scrapeAllExponentAssets() {
     
     // Set extra headers for CORS
     await page.setExtraHTTPHeaders({
-      'Origin': 'https://www.exponent.finance',
-      'Referer': 'https://www.exponent.finance/',
+      'Origin': 'https://v1.exponent.finance',
+      'Referer': 'https://v1.exponent.finance/',
       'Accept': 'application/json, text/plain, */*',
       'Accept-Language': 'en-US,en;q=0.9',
     });
@@ -170,8 +170,8 @@ export async function scrapeAllExponentAssets() {
           }
           
           const headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers);
-          headers.set('Origin', 'https://exponent.finance');
-          headers.set('Referer', 'https://exponent.finance/');
+          headers.set('Origin', 'https://v1.exponent.finance');
+          headers.set('Referer', 'https://v1.exponent.finance/');
           headers.set('Accept', 'application/json, text/plain, */*');
           headers.set('Accept-Language', 'en-US,en;q=0.9');
           
@@ -198,8 +198,8 @@ export async function scrapeAllExponentAssets() {
       if (url.includes('rpc.ironforge.network')) {
         const headers = {
           ...request.headers(),
-          'Origin': 'https://exponent.finance',
-          'Referer': 'https://exponent.finance/',
+          'Origin': 'https://v1.exponent.finance',
+          'Referer': 'https://v1.exponent.finance/',
           'Accept': 'application/json, text/plain, */*',
           'Accept-Language': 'en-US,en;q=0.9',
           'Content-Type': 'application/json',
@@ -232,7 +232,7 @@ export async function scrapeAllExponentAssets() {
     
     console.log('📡 Navigating to Exponent Finance farm page...');
     const startTime = Date.now();
-    await page.goto('https://www.exponent.finance/farm', {
+    await page.goto('https://v1.exponent.finance/farm', {
       waitUntil: 'networkidle0', // Wait until no network activity for 500ms
       timeout: 90000 // 90 seconds for cold starts
     });

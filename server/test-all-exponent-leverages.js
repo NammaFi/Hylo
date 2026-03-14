@@ -24,7 +24,7 @@ async function testAllExponentLeverages() {
     
     console.log('\n📡 Navigating to Exponent Finance farm page...');
     const startTime = Date.now();
-    await page.goto('https://www.exponent.finance/farm', {
+    await page.goto('https://v1.exponent.finance/farm', {
       waitUntil: 'networkidle0',
       timeout: 60000
     });

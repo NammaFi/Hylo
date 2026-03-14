@@ -1178,10 +1178,10 @@ export async function scrapeExponentDetailPages(page, assets, existingGistData) 
       
       const baseSlug = assetNameToUrlSlug(asset.asset);
       const urlVariations = [
-        `https://www.exponent.finance/farm/${baseSlug}`,
-        `https://www.exponent.finance/farm/${baseSlug}-1`,
-        `https://www.exponent.finance/farm/${baseSlug}-2`,
-        `https://www.exponent.finance/farm/${baseSlug}-3`
+        `https://v1.exponent.finance/farm/${baseSlug}`,
+        `https://v1.exponent.finance/farm/${baseSlug}-1`,
+        `https://v1.exponent.finance/farm/${baseSlug}-2`,
+        `https://v1.exponent.finance/farm/${baseSlug}-3`
       ];
       
       let detailData = null;

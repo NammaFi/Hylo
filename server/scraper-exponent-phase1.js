@@ -91,7 +91,7 @@ export async function scrapeExponentPhase1(options = {}) {
     const page = await browser.newPage();
     
     console.log('📡 Navigating to Exponent Finance farm page...');
-    await page.goto('https://www.exponent.finance/farm', {
+    await page.goto('https://v1.exponent.finance/farm', {
       waitUntil: 'domcontentloaded',
       timeout: 30000
     });
