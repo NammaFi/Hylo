@@ -404,13 +404,13 @@ export async function scrapeExponentDetailPagesPlaywright(page, assets, existing
       
       for (const url of urlVariations) {
         try {
-          console.log(`    [Exponent] Attempt ${attemptNumber}/${urlVariations.length}...`);
+          console.log(`    [Exponent] Attempt ${attemptNumber}/${urlVariations.length}: ${url}`);
           attemptNumber++;
           startTime = Date.now();
           
           const response = await page.goto(url, {
-            waitUntil: 'domcontentloaded',
-            timeout: 30000
+            waitUntil: 'networkidle',
+            timeout: 45000
           });
           
           if (response && response.status() === 404) {
@@ -418,11 +418,42 @@ export async function scrapeExponentDetailPagesPlaywright(page, assets, existing
             continue;
           }
           
-          await page.waitForTimeout(2000);
+          // Wait longer for SPA to render tabs
+          await page.waitForTimeout(4000);
           
-          // Click Details tab
-          const detailsButton = await page.$("button:has-text('Details'), div:has-text('Details')");
+          // Dump page title for debugging
+          const pageTitle = await page.title();
+          const bodySnippet = await page.evaluate(() => document.body.innerText.substring(0, 300));
+          console.log(`      ↳ Page title: "${pageTitle}"`);
+          console.log(`      ↳ Body snippet: ${bodySnippet.replace(/\n/g, ' ').substring(0, 150)}`);
+          
+          // Try multiple selector strategies for the Details tab
+          // Strategy 1: exact button text
+          let detailsButton = await page.$('button:has-text("Details")');
+          
+          // Strategy 2: role=tab with Details text
           if (!detailsButton) {
+            detailsButton = await page.$('[role="tab"]:has-text("Details")');
+          }
+          
+          // Strategy 3: any clickable element with exactly "Details" text
+          if (!detailsButton) {
+            detailsButton = await page.locator('button, [role="tab"], li, a').filter({ hasText: /^Details$/ }).first().elementHandle().catch(() => null);
+          }
+          
+          // Strategy 4: xpath fallback (equivalent to old Puppeteer logic)
+          if (!detailsButton) {
+            const xpathResult = await page.$('xpath=//button[contains(text(), "Details")] | //div[@role="tab" and contains(text(), "Details")]');
+            if (xpathResult) detailsButton = xpathResult;
+          }
+          
+          if (!detailsButton) {
+            // Log all tab-like elements to help debug selector
+            const tabTexts = await page.evaluate(() => {
+              const els = document.querySelectorAll('button, [role="tab"]');
+              return Array.from(els).map(e => e.textContent.trim()).filter(t => t.length > 0 && t.length < 40);
+            });
+            console.log(`      ↳ Tabs/buttons found: ${JSON.stringify(tabTexts)}`);
             throw new Error('Details tab button not found');
           }
           
@@ -635,14 +666,25 @@ export async function scrapeExponentDetailPagesPlaywright(page, assets, existing
 
 /**
  * Convert Exponent asset name to URL slug
- * "YT-hyloSOL-10DEC25" → "hylosol-10dec25"
+ * "YT-xSOL-12AUG26" → "xsol-12Aug26" (base lowercase, month title-cased)
  * @param {string} assetName
  * @returns {string}
  */
 function assetNameToUrlSlug(assetName) {
-  return assetName
-    .replace(/^YT-/, '')
-    .toLowerCase()
-    .replace(/\+/g, '')
-    .replace(/\*/g, '');
+  const withoutPrefix = assetName.replace(/^YT-/i, '');
+  const lastDashIndex = withoutPrefix.lastIndexOf('-');
+  let baseAsset = withoutPrefix.substring(0, lastDashIndex).toLowerCase();
+  const dateStr = withoutPrefix.substring(lastDashIndex + 1);
+
+  baseAsset = baseAsset
+    .replace(/\+/g, 'plus')
+    .replace(/\*/g, 'star');
+
+  const day = dateStr.substring(0, 2);
+  const month = dateStr.substring(2, 5);
+  const year = dateStr.substring(5, 7);
+
+  const formattedDate = day + month.charAt(0).toUpperCase() + month.substring(1).toLowerCase() + year;
+
+  return `${baseAsset}-${formattedDate}`;
 }
