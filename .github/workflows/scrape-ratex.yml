@@ -32,6 +32,10 @@ jobs:
         working-directory: ./server
         run: npm install
       
+      - name: Install Playwright Chromium
+        working-directory: ./server
+        run: npx playwright install chromium --with-deps
+      
       - name: Run scraper (single execution)
         working-directory: ./server
         run: node scrape-once.js
