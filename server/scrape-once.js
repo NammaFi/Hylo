@@ -1,5 +1,6 @@
 import { scrapeAllAssets, scrapeDetailPages, scrapeExponentDetailPages, fetchExistingGistData, calculateMaturesIn, calculateYtMetrics, calculateDaysToMaturity } from './scraper.js';
-import { scrapeAllExponentAssets } from './scraper-exponent.js';
+import { scrapeAllExponentAssets, scrapeExponentDetailPagesPlaywright } from './scraper-exponent-playwright.js';
+import { chromium as playwrightChromium } from 'playwright';
 import { fetchXSolMetricsPhase0 } from './scraper-xsol-phase0.js';
 import { checkCRAndAlert } from './cr-monitor.js';
 import puppeteerCore from 'puppeteer-core';
@@ -63,6 +64,7 @@ async function updateGist(gistId, data, token) {
 
 async function main() {
   let browser;
+  let playwrightBrowser = null;
   let xsolMetricsData = null; // Store Phase 0 data to include in final Gist
   
   try {
@@ -116,8 +118,10 @@ async function main() {
     
     // ========== PHASE 1: Scrape Cards Page (PARALLEL) ==========
     console.log('\n🚀 PHASE 1: Scraping RateX and Exponent in parallel...');
+    console.log('   📌 Exponent: Using Playwright (bypasses Vercel checkpoint)');
     
     // Run scrapers in parallel for speed
+    // RateX uses Puppeteer, Exponent uses Playwright
     const [ratexData, exponentData] = await Promise.all([
       scrapeAllAssets(),
       scrapeAllExponentAssets()
@@ -411,8 +415,41 @@ async function main() {
     console.log('  → Scraping RateX Hylo assets...');
     const phase2AratexData = await scrapeDetailPages(detailPage, ratexHylo, existingGistData);
     
-    console.log('  → Scraping Exponent Hylo assets...');
-    const phase2AExponentData = await scrapeExponentDetailPages(detailPage, exponentHylo, existingGistData);
+    console.log('  → Scraping Exponent Hylo assets (Playwright)...');
+    // Use Playwright for Exponent detail pages (bypasses Vercel checkpoint)
+    let playwrightPage = null;
+    try {
+      playwrightBrowser = await playwrightChromium.launch({
+        headless: true,
+        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'],
+      });
+      const playwrightContext = await playwrightBrowser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        viewport: { width: 1920, height: 1080 },
+      });
+      await playwrightContext.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        // Pre-seed localStorage to suppress the "Exponent v2 is coming" announcement modal
+        // (it's a one-time-per-session popup gated by a localStorage flag)
+        const suppressKeys = [
+          'exponent_announcement_seen', 'announcement_seen', 'v2_announcement_seen',
+          'modal_dismissed', 'exponent_modal_dismissed', 'announcementDismissed',
+          'v2AnnouncementSeen', 'exponentV2Seen',
+        ];
+        suppressKeys.forEach(k => localStorage.setItem(k, 'true'));
+      });
+      playwrightPage = await playwrightContext.newPage();
+    } catch (pwError) {
+      console.warn('⚠️ Failed to launch Playwright browser for Phase 2:', pwError.message);
+    }
+    
+    let phase2AExponentData;
+    if (playwrightPage) {
+      phase2AExponentData = await scrapeExponentDetailPagesPlaywright(playwrightPage, exponentHylo, existingGistData, calculateYtMetrics, calculateDaysToMaturity);
+    } else {
+      console.warn('⚠️ Falling back to Puppeteer for Exponent detail pages');
+      phase2AExponentData = await scrapeExponentDetailPages(detailPage, exponentHylo, existingGistData);
+    }
     
     const phase2AData = [...phase2AratexData, ...phase2AExponentData];
     
@@ -441,8 +478,13 @@ async function main() {
     console.log('  → Scraping RateX remaining assets...');
     const phase2BRatexData = await scrapeDetailPages(detailPage, ratexOthers, existingGistData);
     
-    console.log('  → Scraping Exponent remaining assets...');
-    const phase2BExponentData = await scrapeExponentDetailPages(detailPage, exponentOthers, existingGistData);
+    console.log('  → Scraping Exponent remaining assets (Playwright)...');
+    let phase2BExponentData;
+    if (playwrightPage) {
+      phase2BExponentData = await scrapeExponentDetailPagesPlaywright(playwrightPage, exponentOthers, existingGistData, calculateYtMetrics, calculateDaysToMaturity);
+    } else {
+      phase2BExponentData = await scrapeExponentDetailPages(detailPage, exponentOthers, existingGistData);
+    }
     
     const phase2BData = [...phase2BRatexData, ...phase2BExponentData];
     console.log(`\n✅ Phase 2 scraping complete: ${phase2AData.length} Hylo assets + ${phase2BData.length} other assets`);
@@ -483,7 +525,10 @@ async function main() {
     // ========== YIELD ALERT CHECK (via Vercel API) ==========
     await triggerYieldAlertCheck();
     
-    // Close browser
+    // Close browsers
+    if (playwrightBrowser) {
+      await playwrightBrowser.close();
+    }
     await browser.close();
     console.log('\n✨ Scraping complete!');
     
@@ -491,6 +536,9 @@ async function main() {
     console.error('\n❌ Error:', error.message);
     console.error(error);
     
+    if (playwrightBrowser) {
+      try { await playwrightBrowser.close(); } catch (_) {}
+    }
     if (browser) {
       await browser.close();
     }
