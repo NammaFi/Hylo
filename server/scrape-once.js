@@ -429,6 +429,14 @@ async function main() {
       });
       await playwrightContext.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        // Pre-seed localStorage to suppress the "Exponent v2 is coming" announcement modal
+        // (it's a one-time-per-session popup gated by a localStorage flag)
+        const suppressKeys = [
+          'exponent_announcement_seen', 'announcement_seen', 'v2_announcement_seen',
+          'modal_dismissed', 'exponent_modal_dismissed', 'announcementDismissed',
+          'v2AnnouncementSeen', 'exponentV2Seen',
+        ];
+        suppressKeys.forEach(k => localStorage.setItem(k, 'true'));
       });
       playwrightPage = await playwrightContext.newPage();
     } catch (pwError) {

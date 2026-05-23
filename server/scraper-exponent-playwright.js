@@ -421,11 +421,22 @@ export async function scrapeExponentDetailPagesPlaywright(page, assets, existing
           // Wait longer for SPA to render tabs
           await page.waitForTimeout(4000);
           
-          // Dump page title for debugging
-          const pageTitle = await page.title();
-          const bodySnippet = await page.evaluate(() => document.body.innerText.substring(0, 300));
-          console.log(`      ↳ Page title: "${pageTitle}"`);
-          console.log(`      ↳ Body snippet: ${bodySnippet.replace(/\n/g, ' ').substring(0, 150)}`);
+          // Dismiss the "Exponent v2 is coming" announcement modal if present.
+          // The modal uses a fixed overlay that intercepts all pointer events.
+          // Strategy: forcibly remove any fixed full-screen overlay from the DOM.
+          const overlaysRemoved = await page.evaluate(() => {
+            let removed = 0;
+            // Remove the blocking overlay container (z-level-5 fixed modal)
+            document.querySelectorAll('.fixed.inset-0.bg-transparentDarkGrey').forEach(el => {
+              const parent = el.closest('.fixed.top-0.left-0.inset-0');
+              if (parent) { parent.remove(); removed++; }
+              else { el.remove(); removed++; }
+            });
+            return removed;
+          });
+          if (overlaysRemoved > 0) {
+            console.log(`      ↳ Removed ${overlaysRemoved} blocking overlay(s)`);
+          }
           
           // Try multiple selector strategies for the Details tab
           // Strategy 1: exact button text
