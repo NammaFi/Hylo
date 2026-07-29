@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BarChart3, ArrowRight, TrendingUp, Bell } from 'lucide-react';
-import { checkAndRefreshIfStale } from '../services/ratexApi';
 import '../components/Dashboard.css';
 
 const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
 
 const Home: React.FC = () => {
   const [xsolIconUrl, setXsolIconUrl] = useState<string | null>(null);
-
-  // Check data freshness on mount
-  useEffect(() => {
-    checkAndRefreshIfStale();
-  }, []);
 
   // Fetch xSOL icon URL from Gist
   useEffect(() => {

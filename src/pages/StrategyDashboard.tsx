@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, Info, LayoutGrid, List, BarChart3 } from 'lucide-react';
 import type { AssetData } from '../services/ratexApi';
-import { fetchAllAssets, getLastUpdated, checkAndRefreshIfStale } from '../services/ratexApi';
+import { fetchAllAssets, getLastUpdated } from '../services/ratexApi';
 import AssetCard from '../components/AssetCard';
 import '../components/Dashboard.css';
 
@@ -155,10 +155,6 @@ const StrategyDashboard: React.FC = () => {
     setError(null);
     
     try {
-      // Check data age and trigger refresh if stale (>10 mins old)
-      // This happens in background, doesn't block UI
-      await checkAndRefreshIfStale();
-      
       const data = await fetchAllAssets();
       setAssets(data);
       
