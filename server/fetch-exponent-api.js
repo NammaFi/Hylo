@@ -30,6 +30,20 @@ import { fetchAllExponentAssetsRpc } from './fetch-exponent-rpc.js';
 const API_URL = 'https://app.exponent.finance/api/markets';
 const REGISTRY_PATH = new URL('./asset-registry.json', import.meta.url);
 
+// Maps the API's `platform` field to the exact project-bucket name StrategyDashboard.tsx's
+// FILTER_PROJECTS expects. Confirmed live 2026-07-29: projectName was previously set to the
+// token's own display name (e.g. "hyloSOL"), which silently failed the frontend's exact-match
+// filter (`getProjectForAsset(asset) === 'Hylo'`) — assets showed up under "All" but vanished
+// from their own project's filter. ONyc/srONyc happened to still work via an unrelated
+// substring special-case in the frontend ("srONyc".includes("ONyc")), not because their
+// projectName was ever correct. Anything not in this map (raiku, solstice, bulk, fragmetric, …)
+// has no FILTER_PROJECTS bucket anyway and correctly falls into "Others", same as an
+// unrecognized RateX project already does.
+const PLATFORM_TO_PROJECT = {
+  hylo: 'Hylo',
+  onrefinance: 'Onre',
+};
+
 function loadRegistry() {
   try {
     return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
@@ -62,6 +76,7 @@ function mapApiEntryToAssetRecord(entry, registryByVault) {
   const leverage = typeof entry.yieldExposure === 'number' ? entry.yieldExposure : null;
   const assetBoost = entry.pointsBoost?.points_per_day ?? registryOverride?.pointsPerDay ?? null;
   const displayName = registryOverride?.displayName ?? entry.tokenName;
+  const projectName = PLATFORM_TO_PROJECT[entry.platform] ?? displayName;
 
   const maturityStr = maturityDate.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
   const lastUpdated = new Date().toISOString();
@@ -90,7 +105,7 @@ function mapApiEntryToAssetRecord(entry, registryByVault) {
     source: 'exponent',
 
     projectBackgroundImage: registryOverride?.logo ?? null,
-    projectName: displayName,
+    projectName,
     assetSymbolImage: registryOverride?.logo ?? null,
 
     rangeLower,

@@ -11,6 +11,15 @@ import registry from './asset-registry.json' with { type: 'json' };
 
 const API_URL = 'https://app.exponent.finance/api/markets';
 
+// Maps the API's `platform` field to the exact project-bucket name StrategyDashboard.tsx's
+// FILTER_PROJECTS expects. See server/fetch-exponent-api.js's identical constant for the full
+// writeup — projectName was previously the token's own display name, which silently failed the
+// frontend's exact-match project filter. Keep this in sync with that file's copy.
+const PLATFORM_TO_PROJECT = {
+  hylo: 'Hylo',
+  onrefinance: 'Onre',
+};
+
 function formatMaturityCode(maturityDate) {
   const day = String(maturityDate.getUTCDate()).padStart(2, '0');
   const month = maturityDate.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
@@ -30,6 +39,7 @@ function mapApiEntryToAssetRecord(entry, registryByVault, calculateYtMetrics, ca
   const leverage = typeof entry.yieldExposure === 'number' ? entry.yieldExposure : null;
   const assetBoost = entry.pointsBoost?.points_per_day ?? registryOverride?.pointsPerDay ?? null;
   const displayName = registryOverride?.displayName ?? entry.tokenName;
+  const projectName = PLATFORM_TO_PROJECT[entry.platform] ?? displayName;
 
   const maturityStr = maturityDate.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
   const lastUpdated = new Date().toISOString();
@@ -56,7 +66,7 @@ function mapApiEntryToAssetRecord(entry, registryByVault, calculateYtMetrics, ca
     source: 'exponent',
 
     projectBackgroundImage: registryOverride?.logo ?? null,
-    projectName: displayName,
+    projectName,
     assetSymbolImage: registryOverride?.logo ?? null,
 
     rangeLower,
