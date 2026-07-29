@@ -3,7 +3,7 @@
     "static": {
       "displayName": "hyloSOL",
       "rawName": "PT-hyloSOL-12AUG26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-hyloSOL.svg",
       "category": "SOL",
       "flavor": "generic",
       "pointsPerDay": null
@@ -20,7 +20,7 @@
     "static": {
       "displayName": "xSOL",
       "rawName": "PT-xSOL-12AUG26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-xSOL.svg",
       "category": "SOL",
       "flavor": "generic",
       "pointsPerDay": null
@@ -37,7 +37,7 @@
     "static": {
       "displayName": "hyUSD",
       "rawName": "PT-hyUSD-12AUG26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-sHYUSD.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -54,7 +54,7 @@
     "static": {
       "displayName": "eUSX",
       "rawName": "Exponent PT-eUSX-16SEP26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-eUSX.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -71,7 +71,7 @@
     "static": {
       "displayName": "rkuSOL",
       "rawName": "Exponent PT-rkuSOL-31OCT26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-rkuSOL.svg",
       "category": "SOL",
       "flavor": "generic",
       "pointsPerDay": null
@@ -88,7 +88,7 @@
     "static": {
       "displayName": "bulkSOL",
       "rawName": "Exponent PT-bulkSOL-31OCT26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-BulkSOL.svg",
       "category": "SOL",
       "flavor": "generic",
       "pointsPerDay": null
@@ -105,7 +105,7 @@
     "static": {
       "displayName": "kUSDC",
       "rawName": "Exponent PT-kUSDC-10AUG26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-kUSDG.svg",
       "category": "USD",
       "flavor": "kamino",
       "pointsPerDay": null
@@ -122,7 +122,7 @@
     "static": {
       "displayName": "stSLX",
       "rawName": "Exponent PT-stSLX-21AUG26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-stSLX.svg",
       "category": "Other",
       "flavor": "generic",
       "pointsPerDay": null
@@ -139,7 +139,7 @@
     "static": {
       "displayName": "ONYC",
       "rawName": "PT-ONyc-10SEP26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-ONyc.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -156,7 +156,7 @@
     "static": {
       "displayName": "hySOL+",
       "rawName": "PT-hySOL+-12AUG26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-hyloSOL.svg",
       "category": "SOL",
       "flavor": "generic",
       "pointsPerDay": null
@@ -173,7 +173,7 @@
     "static": {
       "displayName": "srONyc",
       "rawName": "Exponent PT-srONyc-14NOV26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-srONyc.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -190,7 +190,7 @@
     "static": {
       "displayName": "USD.tel",
       "rawName": "Exponent PT-USD.tel-05DEC26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-USD.tel.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -207,7 +207,7 @@
     "static": {
       "displayName": "srONyc",
       "rawName": "Exponent PT-srONyc-10SEP26",
-      "logo": null,
+      "logo": "https://cdn.exponent.finance/pt-tokens/PT-srONyc.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null
@@ -224,7 +224,7 @@
     "static": {
       "displayName": "USX",
       "rawName": "Exponent PT-USX-16SEP26",
-      "logo": null,
+      "logo": "https://raw.githubusercontent.com/valentinmadrid/exponent-icons/refs/heads/main/PT-USX.svg",
       "category": "USD",
       "flavor": "generic",
       "pointsPerDay": null

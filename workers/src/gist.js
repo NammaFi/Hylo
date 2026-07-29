@@ -52,6 +52,57 @@ export async function updateGist(env, data) {
 }
 
 /**
+ * Fill in visual-asset fields (icon/background/project name) for freshly-fetched Exponent assets
+ * that don't already have one. Priority: Exponent's own icon (exponent-fetch.js already set
+ * projectBackgroundImage/assetSymbolImage from asset-registry.json's `static.logo`, resolved via
+ * the real Metaplex-metadata → icon chain in fetch-exponent-rpc.js's getPtMetadata — NOT
+ * guessable, NOT from the site API, which has no icon field at all) always wins when present.
+ * Only when it's missing (a newly-discovered asset not yet in the registry) do we fall back to a
+ * RateX entry for the same baseAsset (rate-x.io hosts its own icons, a different platform's
+ * artwork for the same underlying asset), then whatever the previous Gist entry for this exact
+ * asset key already had, then null.
+ *
+ * Without any of this, every Exponent record ships with null icons (before the registry had real
+ * logos, `static.logo` was never filled in) — once this Worker's 1-minute writes overtook
+ * scrape-once.js's own RateX-fallback icon logic, icons vanished within a minute of every GH
+ * Actions run — confirmed live 2026-07-29 (hyloSOL: null both fields).
+ */
+export function enrichVisualAssets(freshExponentAssets, existingData) {
+  const existingAssets = existingData.assets ?? [];
+  const ratexByBaseAsset = new Map(
+    existingAssets
+      .filter(a => a.source === 'ratex' && a.baseAsset)
+      .map(a => [a.baseAsset.toLowerCase(), a])
+  );
+  const oldByAssetKey = new Map(existingAssets.map(a => [a.asset, a]));
+
+  return freshExponentAssets.map(asset => {
+    if (asset.projectBackgroundImage) {
+      return asset; // already has Exponent's own icon (registry static.logo) — keep it
+    }
+    const ratexMatch = ratexByBaseAsset.get(asset.baseAsset?.toLowerCase());
+    if (ratexMatch?.projectBackgroundImage) {
+      return {
+        ...asset,
+        projectBackgroundImage: ratexMatch.projectBackgroundImage,
+        projectName: ratexMatch.projectName,
+        assetSymbolImage: ratexMatch.assetSymbolImage,
+      };
+    }
+    const oldAsset = oldByAssetKey.get(asset.asset);
+    if (oldAsset?.projectBackgroundImage) {
+      return {
+        ...asset,
+        projectBackgroundImage: oldAsset.projectBackgroundImage,
+        projectName: oldAsset.projectName,
+        assetSymbolImage: oldAsset.assetSymbolImage,
+      };
+    }
+    return asset;
+  });
+}
+
+/**
  * Replace only the `source === 'exponent'` entries in the existing Gist with a freshly-fetched
  * set, leaving every other entry (RateX, and anything else that might show up later) untouched.
  */

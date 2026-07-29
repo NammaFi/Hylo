@@ -16,7 +16,7 @@
 // entirely, the site would just fall back to the existing 5-minute cadence, not go stale forever.
 import { fetchExponentAssets } from './exponent-fetch.js';
 import { calculateYtMetrics, calculateMaturesIn, calculateDaysToMaturity } from './yt-metrics.js';
-import { getGist, updateGist, mergeExponentAssets } from './gist.js';
+import { getGist, updateGist, mergeExponentAssets, enrichVisualAssets } from './gist.js';
 import { triggerRateXWorkflow } from './github-trigger.js';
 import { triggerYieldAlertCheck } from './yield-alert.js';
 
@@ -31,7 +31,8 @@ async function runExponentUpdate(env) {
   }
 
   const existingData = await getGist(env);
-  const merged = mergeExponentAssets(existingData, freshAssets);
+  const enrichedAssets = enrichVisualAssets(freshAssets, existingData);
+  const merged = mergeExponentAssets(existingData, enrichedAssets);
   await updateGist(env, merged);
   console.log(`Updated Gist: ${freshAssets.length} Exponent assets, ${merged.assetsCount} total`);
 

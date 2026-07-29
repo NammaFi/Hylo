@@ -41,22 +41,57 @@ function deriveMetadataPda(mint) {
   return pda;
 }
 
-function parseMetadataName(buf) {
-  let offset = 1 + 32 + 32; // key(1) + update_authority(32) + mint(32)
-  const len = buf.readUInt32LE(offset);
-  offset += 4;
-  return buf.slice(offset, offset + len).toString('utf8').replace(/\0/g, '').trim();
+// Metaplex metadata layout: key(1) + update_authority(32) + mint(32) + name(4+len) +
+// symbol(4+len) + uri(4+len) + ... — name, symbol, and uri are each a u32 length prefix
+// followed by the UTF-8 bytes, back to back, so reading uri just means walking past name
+// and symbol first.
+function parseMetadataNameAndUri(buf) {
+  let offset = 1 + 32 + 32;
+  const nameLen = buf.readUInt32LE(offset); offset += 4;
+  const name = buf.slice(offset, offset + nameLen).toString('utf8').replace(/\0/g, '').trim();
+  offset += nameLen;
+  const symbolLen = buf.readUInt32LE(offset); offset += 4;
+  offset += symbolLen; // symbol itself unused here
+  const uriLen = buf.readUInt32LE(offset); offset += 4;
+  const uri = buf.slice(offset, offset + uriLen).toString('utf8').replace(/\0/g, '').trim();
+  return { name, uri };
 }
 
-async function getPtName(connection, mintPt) {
+/**
+ * One on-chain read for a PT mint's Metaplex metadata, resolving both its display name and its
+ * real Exponent icon. The icon chain: metadata's `uri` points to a JSON file (hosted on
+ * github.com/valentinmadrid/exponent-icons — a third-party account, not Exponent's own domain, a
+ * known small dependency risk) whose `image` field is the actual SVG. Confirmed 2026-07-29: NOT
+ * guessable from the token symbol alone (only 5/10 assets matched a naive `PT-{symbol}.svg`
+ * pattern) — has to be resolved per-asset via the real metadata/URI chain. `icon` comes back
+ * null on any failure (missing metadata, network error, malformed JSON) — it's cosmetic, never
+ * worth failing discovery over; `name` failures are likewise non-fatal (existing callers already
+ * treat a null name as "use the fallback naming path").
+ */
+async function getPtMetadata(connection, mintPt) {
+  let name = null;
+  let icon = null;
   try {
     const pda = deriveMetadataPda(mintPt);
     const info = await connection.getAccountInfo(pda);
-    if (!info) return null;
-    return parseMetadataName(info.data);
+    if (!info) return { name, icon };
+    const parsed = parseMetadataNameAndUri(info.data);
+    name = parsed.name;
+    if (parsed.uri) {
+      try {
+        const res = await fetch(parsed.uri);
+        if (res.ok) {
+          const json = await res.json();
+          icon = json.image ?? null;
+        }
+      } catch {
+        // icon stays null — cosmetic only
+      }
+    }
   } catch {
-    return null;
+    // name/icon stay null — existing callers handle this gracefully
   }
+  return { name, icon };
 }
 
 // Widened to allow "." (e.g. "USD.tel") — Exponent's naming isn't perfectly uniform, keep permissive.
@@ -75,6 +110,12 @@ function parsePtName(rawName) {
  */
 export async function discoverLiveMarkets({ connection, rotator }) {
   const existingRegistry = loadRegistry();
+  // Keyed by vault address (known before we've resolved a name/key for this market) so a cached
+  // name+icon can be reused without ever calling getPtMetadata again — both are immutable once a
+  // PT mint exists, so re-resolving them every run is pure wasted RPC + network calls.
+  const existingByVault = new Map(
+    Object.entries(existingRegistry).map(([key, entry]) => [entry.maturity.vaultAddress, { key, static: entry.static }])
+  );
   const nowUnix = Math.floor(Date.now() / 1000);
 
   const allClmm = await fetchProgramAccountsMarketThree(connection, EXPONENTCLMM_PROGRAM_ID);
@@ -87,7 +128,6 @@ export async function discoverLiveMarkets({ connection, rotator }) {
   const registry = {};
   const results = [];
 
-  let rrIndex = 0;
   const nextConn = () => (rotator ? rotator.get() : connection);
 
   for (const clmmMarket of live) {
@@ -96,9 +136,20 @@ export async function discoverLiveMarkets({ connection, rotator }) {
     const conn = nextConn();
     try {
       const vault = await Vault.load(LOCAL_ENV, conn, vaultAddr);
-      const rawName = await getPtName(conn, vault.mintPt);
+
+      const cached = existingByVault.get(vaultAddr.toBase58());
+      let rawName, resolvedIcon;
+      if (cached?.static?.rawName && cached?.static?.logo) {
+        // Already resolved on a previous run — the registry static field is the main source,
+        // getPtMetadata() is only the fallback for a vault we haven't seen with a logo yet.
+        rawName = cached.static.rawName;
+        resolvedIcon = cached.static.logo;
+      } else {
+        ({ name: rawName, icon: resolvedIcon } = await getPtMetadata(conn, vault.mintPt));
+      }
+
       const parsed = parsePtName(rawName);
-      const key = parsed ? `${parsed.baseSymbol}-${parsed.maturityCode}` : `UNKNOWN-${vaultAddr.toBase58().slice(0, 8)}`;
+      const key = cached?.key ?? (parsed ? `${parsed.baseSymbol}-${parsed.maturityCode}` : `UNKNOWN-${vaultAddr.toBase58().slice(0, 8)}`);
 
       const [derivedAmm, derivedOb] = [
         marketPda.market({ vault: vaultAddr, seedId: 0 }),
@@ -109,11 +160,14 @@ export async function discoverLiveMarkets({ connection, rotator }) {
         conn.getAccountInfo(derivedOb),
       ]);
 
-      const existingStatic = existingRegistry[key]?.static ?? {};
+      const existingStatic = cached?.static ?? {};
       const staticFields = {
         displayName: existingStatic.displayName ?? parsed?.baseSymbol ?? null,
         rawName,
-        logo: existingStatic.logo ?? null,
+        // Hand-set logo always wins if present; otherwise the cached/resolved Exponent icon
+        // (Metaplex metadata → uri → image — not guessable, not a website source, see
+        // getPtMetadata) is written back here, so it's cached for every future run too.
+        logo: existingStatic.logo ?? resolvedIcon ?? null,
         category: existingStatic.category ?? null,
         flavor: vault.flavor.flavor,
         pointsPerDay: existingStatic.pointsPerDay ?? null,
