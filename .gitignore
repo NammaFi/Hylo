@@ -1,3 +1,6 @@
+# Cloudflare Workers local dev state
+.wrangler/
+
 # Logs
 logs
 *.log

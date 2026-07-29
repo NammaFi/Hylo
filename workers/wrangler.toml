@@ -1,0 +1,20 @@
+name = "hylo-exponent-worker"
+main = "src/index.js"
+compatibility_date = "2026-07-28"
+
+[triggers]
+# * * * * *   -> fetch Exponent's site API, merge into the Gist (Exponent-only entries)
+# */5 * * * * -> trigger the RateX GitHub Actions workflow server-side
+crons = ["* * * * *", "*/5 * * * *"]
+
+[vars]
+# Not secret - this is the same public Gist ID already hardcoded in
+# .github/workflows/scrape-ratex.yml.
+GIST_ID = "d3a1db6fc79e168cf5dff8d3a2c11706"
+
+# Secret - set with `wrangler secret put GITHUB_TOKEN`, never stored in this file or committed.
+# One token, reused for both jobs (Gist read/write AND the workflow-dispatch trigger), so it
+# needs BOTH `gist` scope and `workflow` scope. If the GIST_TOKEN GitHub Actions secret already
+# has both, copy that exact value in here - no new token needs to be created. Otherwise, generate
+# a classic PAT at https://github.com/settings/tokens with `gist` + `workflow` checked.
+#   GITHUB_TOKEN

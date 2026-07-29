@@ -1,6 +1,5 @@
-import { scrapeAllAssets, scrapeDetailPages, scrapeExponentDetailPages, fetchExistingGistData, calculateMaturesIn, calculateYtMetrics, calculateDaysToMaturity } from './scraper.js';
-import { scrapeAllExponentAssets, scrapeExponentDetailPagesPlaywright } from './scraper-exponent-playwright.js';
-import { chromium as playwrightChromium } from 'playwright';
+import { scrapeAllAssets, scrapeDetailPages, fetchExistingGistData, calculateMaturesIn, calculateYtMetrics, calculateDaysToMaturity } from './scraper.js';
+import { fetchAllExponentAssetsWithFallback } from './fetch-exponent-api.js';
 import { fetchXSolMetricsPhase0 } from './scraper-xsol-phase0.js';
 import { checkCRAndAlert } from './cr-monitor.js';
 import puppeteerCore from 'puppeteer-core';
@@ -64,7 +63,6 @@ async function updateGist(gistId, data, token) {
 
 async function main() {
   let browser;
-  let playwrightBrowser = null;
   let xsolMetricsData = null; // Store Phase 0 data to include in final Gist
   
   try {
@@ -116,15 +114,12 @@ async function main() {
       ignoreHTTPSErrors: true,
     });
     
-    // ========== PHASE 1: Scrape Cards Page (PARALLEL) ==========
-    console.log('\n🚀 PHASE 1: Scraping RateX and Exponent in parallel...');
-    console.log('   📌 Exponent: Using Playwright (bypasses Vercel checkpoint)');
-    
-    // Run scrapers in parallel for speed
-    // RateX uses Puppeteer, Exponent uses Playwright
+    // ========== PHASE 1: Scrape RateX cards + fetch Exponent data (PARALLEL) ==========
+    console.log('\n🚀 PHASE 1: Scraping RateX (Puppeteer) + fetching Exponent (site API, RPC fallback)...');
+
     const [ratexData, exponentData] = await Promise.all([
       scrapeAllAssets(),
-      scrapeAllExponentAssets()
+      fetchAllExponentAssetsWithFallback()
     ]);
     
     console.log(`✅ RateX: ${ratexData.length} assets`);
@@ -388,77 +383,27 @@ async function main() {
     await updateGist(GIST_ID, phase1GistData, GIST_TOKEN);
     console.log('✅ Phase 1 Gist updated - Frontend can use calculator now!');
     
-    // ========== PHASE 2: Scrape Detail Pages (Hylo Priority + Parallel) ==========
-    console.log('\n🚀 Starting Phase 2: Hylo assets first, then remaining (parallel)...');
-    
-    // Filter Hylo assets by projectName (for RateX) and matching baseAsset (for Exponent)
+    // ========== PHASE 2: Scrape RateX Detail Pages (Hylo Priority) ==========
+    // Exponent no longer needs a Phase 2 — fetch-exponent-api.js's Phase 1 output already
+    // includes everything the old Playwright detail-page scrape added (precise maturity from
+    // maturityDateUnixTs, assetBoost from pointsBoost.points_per_day), and more accurately.
+    console.log('\n🚀 Starting Phase 2: RateX detail pages, Hylo assets first...');
+
     const ratexAssets = phase1MergedData.filter(a => a.source === 'ratex');
-    const exponentAssets = phase1MergedData.filter(a => a.source === 'exponent');
-    
-    // RateX Hylo assets filtered by projectName
     const ratexHylo = ratexAssets.filter(a => a.projectName === 'Hylo');
-    
-    // Exponent Hylo assets: match baseAsset with RateX Hylo assets
-    const hyloBaseAssets = ratexHylo.map(a => a.baseAsset.toLowerCase());
-    const exponentHylo = exponentAssets.filter(a => hyloBaseAssets.includes(a.baseAsset.toLowerCase()));
-    
-    // Remaining (non-Hylo) assets
     const ratexOthers = ratexAssets.filter(a => a.projectName !== 'Hylo');
-    const exponentOthers = exponentAssets.filter(a => !hyloBaseAssets.includes(a.baseAsset.toLowerCase()));
-    
-    console.log(`\n📌 Phase 2A: Scraping Hylo assets first (${ratexHylo.length} RateX + ${exponentHylo.length} Exponent)...`);
-    
-    // Create single page for sequential execution
+
+    console.log(`\n📌 Phase 2A: Scraping RateX Hylo assets first (${ratexHylo.length})...`);
+
     const detailPage = await browser.newPage();
-    
-    // Scrape Hylo assets sequentially (RateX first, then Exponent)
-    console.log('  → Scraping RateX Hylo assets...');
-    const phase2AratexData = await scrapeDetailPages(detailPage, ratexHylo, existingGistData);
-    
-    console.log('  → Scraping Exponent Hylo assets (Playwright)...');
-    // Use Playwright for Exponent detail pages (bypasses Vercel checkpoint)
-    let playwrightPage = null;
-    try {
-      playwrightBrowser = await playwrightChromium.launch({
-        headless: true,
-        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'],
-      });
-      const playwrightContext = await playwrightBrowser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        viewport: { width: 1920, height: 1080 },
-      });
-      await playwrightContext.addInitScript(() => {
-        Object.defineProperty(navigator, 'webdriver', { get: () => false });
-        // Pre-seed localStorage to suppress the "Exponent v2 is coming" announcement modal
-        // (it's a one-time-per-session popup gated by a localStorage flag)
-        const suppressKeys = [
-          'exponent_announcement_seen', 'announcement_seen', 'v2_announcement_seen',
-          'modal_dismissed', 'exponent_modal_dismissed', 'announcementDismissed',
-          'v2AnnouncementSeen', 'exponentV2Seen',
-        ];
-        suppressKeys.forEach(k => localStorage.setItem(k, 'true'));
-      });
-      playwrightPage = await playwrightContext.newPage();
-    } catch (pwError) {
-      console.warn('⚠️ Failed to launch Playwright browser for Phase 2:', pwError.message);
-    }
-    
-    let phase2AExponentData;
-    if (playwrightPage) {
-      phase2AExponentData = await scrapeExponentDetailPagesPlaywright(playwrightPage, exponentHylo, existingGistData, calculateYtMetrics, calculateDaysToMaturity);
-    } else {
-      console.warn('⚠️ Falling back to Puppeteer for Exponent detail pages');
-      phase2AExponentData = await scrapeExponentDetailPages(detailPage, exponentHylo, existingGistData);
-    }
-    
-    const phase2AData = [...phase2AratexData, ...phase2AExponentData];
-    
+    const phase2AData = await scrapeDetailPages(detailPage, ratexHylo, existingGistData);
+
     // Merge Phase 2A (Hylo) with Phase 1 data for all assets
     const phase2AFullData = phase1MergedData.map(asset => {
       const hyloData = phase2AData.find(h => h.asset === asset.asset);
       return hyloData || asset; // Use Hylo Phase 2 data if available, otherwise Phase 1
     });
-    
+
     // Update Gist with Hylo data (quick update for frontend)
     console.log('\n📤 Updating Gist with Hylo data (Phase 2A)...');
     const phase2ATimestamp = {
@@ -471,22 +416,10 @@ async function main() {
     };
     await updateGist(GIST_ID, phase2ATimestamp, GIST_TOKEN);
     console.log('✅ Hylo data now live in Gist!');
-    
-    // Scrape remaining assets sequentially
-    console.log(`\n📌 Phase 2B: Scraping remaining assets (${ratexOthers.length} RateX + ${exponentOthers.length} Exponent)...`);
-    
-    console.log('  → Scraping RateX remaining assets...');
-    const phase2BRatexData = await scrapeDetailPages(detailPage, ratexOthers, existingGistData);
-    
-    console.log('  → Scraping Exponent remaining assets (Playwright)...');
-    let phase2BExponentData;
-    if (playwrightPage) {
-      phase2BExponentData = await scrapeExponentDetailPagesPlaywright(playwrightPage, exponentOthers, existingGistData, calculateYtMetrics, calculateDaysToMaturity);
-    } else {
-      phase2BExponentData = await scrapeExponentDetailPages(detailPage, exponentOthers, existingGistData);
-    }
-    
-    const phase2BData = [...phase2BRatexData, ...phase2BExponentData];
+
+    // Scrape remaining RateX assets
+    console.log(`\n📌 Phase 2B: Scraping remaining RateX assets (${ratexOthers.length})...`);
+    const phase2BData = await scrapeDetailPages(detailPage, ratexOthers, existingGistData);
     console.log(`\n✅ Phase 2 scraping complete: ${phase2AData.length} Hylo assets + ${phase2BData.length} other assets`);
     
     // Merge Phase 2B data back into phase2AFullData (which already has Phase 1 + Phase 2A)
@@ -525,20 +458,14 @@ async function main() {
     // ========== YIELD ALERT CHECK (via Vercel API) ==========
     await triggerYieldAlertCheck();
     
-    // Close browsers
-    if (playwrightBrowser) {
-      await playwrightBrowser.close();
-    }
+    // Close browser
     await browser.close();
     console.log('\n✨ Scraping complete!');
-    
+
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     console.error(error);
-    
-    if (playwrightBrowser) {
-      try { await playwrightBrowser.close(); } catch (_) {}
-    }
+
     if (browser) {
       await browser.close();
     }
