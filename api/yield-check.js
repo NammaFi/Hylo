@@ -17,15 +17,30 @@
  */
 
 const TELEGRAM_API = 'https://api.telegram.org';
-const GIST_RAW_URL = 'https://gist.githubusercontent.com/NammaFi/d3a1db6fc79e168cf5dff8d3a2c11706/raw/ratex-assets.json';
+const ASSETS_GIST_ID = 'd3a1db6fc79e168cf5dff8d3a2c11706';
 
 // ─── Fetch asset data from main Gist ─────────────────────────────────────────
+// Reads via the authenticated Gist API (not the public gist.githubusercontent.com raw URL)
+// -- GitHub's raw-content CDN caches for several minutes independent of the Gist's actual
+// write time, which was causing yield-drop alerts to lag 10-15 minutes behind real data even
+// though the Cloudflare Worker updates this Gist every 1 minute.
 
 async function fetchAssets() {
+  const gistToken = process.env.GIST_TOKEN;
+  if (!gistToken) return null;
+
   try {
-    const res = await fetch(GIST_RAW_URL, { cache: 'no-cache' });
+    const res = await fetch(`https://api.github.com/gists/${ASSETS_GIST_ID}`, {
+      headers: {
+        'Authorization': `token ${gistToken}`,
+        'User-Agent': 'Hylo-Yield-Check',
+      },
+    });
     if (!res.ok) return null;
-    const data = await res.json();
+    const gist = await res.json();
+    const content = gist.files?.['ratex-assets.json']?.content;
+    if (!content) return null;
+    const data = JSON.parse(content);
     return data.assets || [];
   } catch {
     return null;
