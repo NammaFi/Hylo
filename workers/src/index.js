@@ -18,7 +18,7 @@ import { fetchExponentAssets } from './exponent-fetch.js';
 import { calculateYtMetrics, calculateMaturesIn, calculateDaysToMaturity } from './yt-metrics.js';
 import { getGist, updateGist, mergeExponentAssets, enrichVisualAssets } from './gist.js';
 import { triggerRateXWorkflow } from './github-trigger.js';
-import { triggerYieldAlertCheck } from './yield-alert.js';
+import { triggerYieldAlertCheck, triggerClaimCheck } from './yield-alert.js';
 
 const EXPONENT_CRON = '* * * * *';
 const RATEX_TRIGGER_CRON = '*/5 * * * *';
@@ -45,6 +45,8 @@ export default {
       ctx.waitUntil(
         runExponentUpdate(env).catch(err => console.error('Exponent update failed:', err.message))
       );
+      // Claimable-yield alerts: own call every minute, not tied to the Exponent API update succeeding.
+      ctx.waitUntil(triggerClaimCheck());
     } else if (event.cron === RATEX_TRIGGER_CRON) {
       ctx.waitUntil(
         triggerRateXWorkflow(env).catch(err => console.error('RateX trigger failed:', err.message))
